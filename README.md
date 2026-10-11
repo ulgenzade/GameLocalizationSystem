@@ -39,13 +39,19 @@ Lütfen ayrıntılı dokümantasyonu görüntülemek için tercih ettiğiniz dil
   - **Perplexity AI (`perplexity.ai`)**: Sonar Pro ve Sonar modelleriyle gerçek zamanlı web doğrulama.
 - **Resmi AI Sağlayıcıları:**
   - **Google Gemini** (Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.1 Pro)
-  - **Groq Cloud** (GPT-OSS, Qwen, Llama ultra-düşük gecikmeli çıkarım)
-  - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet & Haiku)
-  - **OpenAI** (GPT-4o, GPT-4o Mini, o1/o3 serisi)
+  - **Groq Cloud** (GPT-OSS 120B / 20B, Qwen 3.8, Compound & Compound Mini)
+  - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku)
+  - **OpenAI** (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna, GPT-4o, GPT-4o Mini)
   - **DeepSeek** (DeepSeek Chat V3, DeepSeek Reasoner R1)
-  - **Moonshot Kimi & Alibaba Qwen**
+  - **Mistral AI** (Mistral Large, Mistral Small 24B, Codestral, Ministral 8B)
+  - **Moonshot Kimi & Alibaba Qwen** (Moonshot v1 128k, Qwen Plus, Qwen Max, Qwen Turbo)
 - **📥 Yerel AI Model Hub (Ollama Entegrasyonu):**
-  - İnternetsiz ve API kotası harcamadan yerel modelleri (Qwen 2.5, DeepSeek R1, Llama 3.2, Mistral) tek tıkla indirip çalıştırma merkezi.
+  - İnternetsiz ve API kotası harcamadan yerel modelleri tek tıkla indirip çalıştırma merkezi:
+    - **Qwen 2.5 3B:** Ultra hafif, harici GPU gerektirmez (Sadece CPU & 4 GB RAM uyumlu).
+    - **Qwen 2.5 7B (⭐ Önerilen):** En ideal VRAM (4-6 GB) ve çeviri kapasitesi dengesi. Standart oyuncu bilgisayarlarının (GTX 1660 / RTX 3050 / RTX 4050) GPU belleğine tamamen sığar, CPU darboğazı yapmaz; en yüksek kelime akış hızını ve üstün Türkçe gramerini sunar.
+    - **DeepSeek R1 8B:** Düşünce zincirli akıl yürütme (6-8 GB VRAM); deyimler ve felsefi oyun diyalogları için derin analiz.
+    - **Qwen 2.5 14B:** Ağır RPG ve roman seviyesinde edebi derinlik (8-12 GB VRAM).
+    - **Qwen 2.5 32B:** Amiral gemisi insan seviyesi yerel kapasite (16 GB+ VRAM).
 - **🧠 Düşünme & Akıl Yürütme Modu (Reasoning Effort):**
   - Edebi diyaloglar ve deyim analizleri için Low / Medium / High düşünme derinliği ayarı.
 
@@ -169,13 +175,19 @@ chmod +x scripts/build-linux.sh
   - **Perplexity AI (`perplexity.ai`)**: Real-time web-grounded validation using Sonar and Sonar Pro.
 - **First-Party AI Providers:**
   - **Google Gemini** (Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.1 Pro)
-  - **Groq Cloud** (Ultra-low latency inference for Llama, Qwen, and custom models)
-  - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet & Haiku)
-  - **OpenAI** (GPT-4o, GPT-4o Mini, o1/o3 series)
+  - **Groq Cloud** (GPT-OSS 120B / 20B, Qwen 3.8, Compound & Compound Mini)
+  - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku)
+  - **OpenAI** (GPT-6.1 Sol, GPT-6 Astra, GPT-6 Luna, GPT-4o, GPT-4o Mini)
   - **DeepSeek** (DeepSeek Chat V3, DeepSeek Reasoner R1)
-  - **Moonshot Kimi & Alibaba Qwen**
+  - **Mistral AI** (Mistral Large, Mistral Small 24B, Codestral, Ministral 8B)
+  - **Moonshot Kimi & Alibaba Qwen** (Moonshot v1 128k, Qwen Plus, Qwen Max, Qwen Turbo)
 - **📥 Local AI Model Hub (Ollama Integration):**
-  - Download and run models locally (Qwen 2.5, DeepSeek R1, Llama 3.2, Mistral) without internet or API fees.
+  - Download and run models locally without internet or API fees:
+    - **Qwen 2.5 3B:** Ultra-lightweight, CPU-only compatible (4 GB RAM).
+    - **Qwen 2.5 7B (⭐ Recommended):** Golden ratio of VRAM efficiency (4-6 GB) and translation fluency. Perfectly fits mainstream gaming GPUs (GTX 1660 / RTX 3050 / RTX 4050) with zero CPU throttling and top-tier Turkish prose.
+    - **DeepSeek R1 8B:** Chain-of-thought reasoning (6-8 GB VRAM); excels at archaic idioms and complex dialogue.
+    - **Qwen 2.5 14B:** High-tier RPG narrative prose (8-12 GB VRAM).
+    - **Qwen 2.5 32B:** Flagship human-grade local capability (16 GB+ VRAM).
 - **🧠 Reasoning Effort Configuration:**
   - Fine-tune reasoning depth (Low / Medium / High) for complex game lore, archaic dialects, and intricate riddles.
 

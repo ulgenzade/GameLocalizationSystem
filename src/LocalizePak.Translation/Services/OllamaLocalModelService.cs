@@ -15,6 +15,7 @@ public sealed class LocalAiModelOption
     public string Tier { get; init; } = string.Empty;
     public string SizeInfo { get; init; } = string.Empty;
     public string HardwareRequirement { get; init; } = string.Empty;
+    public string RecommendationReason { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
     public bool IsRecommended { get; init; }
 
@@ -55,29 +56,32 @@ public sealed class OllamaLocalModelService
         {
             Id = "qwen2.5:3b",
             DisplayName = "1. Qwen 2.5 3B (Ultra Hafif & Hızlı)",
-            Tier = "Seviye 1/5 • Giriş Seviyesi",
-            SizeInfo = "~2.0 GB",
-            HardwareRequirement = "4 GB+ RAM / Ekran kartsız (Sadece CPU) uyumlu",
-            Description = "En az kaynak tüketen modeldir. Düşük donanımlı dizüstü bilgisayarlarda bile akıcı çalışır. Hızlı menü, eşya ve temel diyalog çevirileri için uygundur.",
+            Tier = "Seviye 1/5 • Giriş Seviyesi (CPU & 4 GB RAM)",
+            SizeInfo = "~2.0 GB İndirme",
+            HardwareRequirement = "4 GB+ Sistem RAM / Harici GPU gerekmez (Sadece CPU ile çalışır)",
+            RecommendationReason = "Düşük Donanım / CPU Uyumu: Harici ekran kartı olmayan ofis bilgisayarlarında bile takılmadan çalışabilir.",
+            Description = "En az kaynak tüketen modeldir. Düşük donanımlı dizüstü bilgisayarlarda bile akıcı çalışır. Hızlı menü, arayüz, eşya ve temel diyalog çevirileri için uygundur.",
             IsRecommended = false
         },
         new LocalAiModelOption
         {
             Id = "qwen2.5:7b",
-            DisplayName = "2. Qwen 2.5 7B (Dengeli & Hızlı • Önerilen)",
-            Tier = "Seviye 2/5 • Standart Oyun Bilgisayarı",
-            SizeInfo = "~4.7 GB",
-            HardwareRequirement = "8 GB+ RAM / 4-6 GB VRAM GPU",
-            Description = "Yerel çeviride altın standarttır. Olağanüstü Türkçe dil bilgisi, yüksek hız ve akıcı cümle yapıları sunar. GTX 1660 / RTX 3050 ve üzeri ile mükemmel çalışır.",
+            DisplayName = "2. Qwen 2.5 7B (En İdeal F/P & VRAM Dengesi • ⭐ Önerilen)",
+            Tier = "Seviye 2/5 • Standart Oyun Bilgisayarı (4-6 GB VRAM)",
+            SizeInfo = "~4.7 GB İndirme",
+            HardwareRequirement = "8 GB+ RAM / 4-6 GB VRAM GPU (GTX 1660 / RTX 3050 / RTX 4050)",
+            RecommendationReason = "⭐ Neden Önerilen? (VRAM & Çeviri Kalitesi Dengesi): Standart bir oyuncu bilgisayarının (4-6 GB VRAM) ekran kartı belleğine tamamen sığar, CPU'ya taşma yapmaz. Hem saniyedeki çeviri kelime hızı (hızlı batch akışı) hem de Türkçe gramer/doğallık başarımı açısından altın orandır.",
+            Description = "Yerel çeviride altın standarttır. Olağanüstü Türkçe dil bilgisi, yüksek hız ve akıcı cümle yapıları sunar. GTX 1660 / RTX 3050 ve üzeri kartlarda tam GPU hızlandırmayla sorunsuz çalışır.",
             IsRecommended = true
         },
         new LocalAiModelOption
         {
             Id = "deepseek-r1:8b",
             DisplayName = "3. DeepSeek R1 8B (Akıl Yürütmeli & Derin Düşünme)",
-            Tier = "Seviye 3/5 • Orta-Üst Donanım",
-            SizeInfo = "~4.9 GB",
-            HardwareRequirement = "12 GB+ RAM / 6-8 GB VRAM GPU",
+            Tier = "Seviye 3/5 • Orta-Üst Donanım (6-8 GB VRAM)",
+            SizeInfo = "~4.9 GB İndirme",
+            HardwareRequirement = "12 GB+ RAM / 6-8 GB VRAM GPU (RTX 2060 / 3060 / 4060)",
+            RecommendationReason = "Derin Muhakeme & Edebi Analiz Tercihi: Deyimleri, kelime oyunlarını ve felsefi oyun diyaloglarını önce düşünce zincirinde (chain-of-thought) analiz eder, ardından çevirir.",
             Description = "Akıl yürütme (reasoning) yetenekli model. Deyimleri, kelime oyunlarını ve karmaşık oyun diyaloglarını çevirmeden önce analiz eder.",
             IsRecommended = false
         },
@@ -85,9 +89,10 @@ public sealed class OllamaLocalModelService
         {
             Id = "qwen2.5:14b",
             DisplayName = "4. Qwen 2.5 14B (İleri Düzey RPG & Edebi Çeviri)",
-            Tier = "Seviye 4/5 • Yüksek Donanım",
-            SizeInfo = "~9.0 GB",
-            HardwareRequirement = "16 GB+ RAM / 8-12 GB VRAM GPU",
+            Tier = "Seviye 4/5 • Yüksek Donanım (8-12 GB VRAM)",
+            SizeInfo = "~9.0 GB İndirme",
+            HardwareRequirement = "16 GB+ RAM / 8-12 GB VRAM GPU (RTX 3060 12GB / RTX 4070)",
+            RecommendationReason = "Ağır Hikayeli RPG Çeviri Kapasitesi: Baldur's Gate 3, Disco Elysium gibi zengin edebi metinlerde karakter ses tonunu ve tarihi üslubu korur.",
             Description = "Ağır RPG (Baldur's Gate 3, Divinity) ve zengin hikayeli oyunlar için profesyonel kalitede edebi üslup ve karakter ses tonu sunar.",
             IsRecommended = false
         },
@@ -95,9 +100,10 @@ public sealed class OllamaLocalModelService
         {
             Id = "qwen2.5:32b",
             DisplayName = "5. Qwen 2.5 32B (Amiral Gemisi • Maksimum Kalite)",
-            Tier = "Seviye 5/5 • Güçlü İş İstasyonu / Üst GPU",
-            SizeInfo = "~19.0 GB",
-            HardwareRequirement = "24 GB+ RAM / 16 GB+ VRAM GPU",
+            Tier = "Seviye 5/5 • Güçlü İş İstasyonu (16 GB+ VRAM)",
+            SizeInfo = "~19.0 GB İndirme",
+            HardwareRequirement = "24 GB+ RAM / 16 GB+ VRAM GPU (RTX 3090 / RTX 4080 / RTX 4090)",
+            RecommendationReason = "Maksimum Yerel Kapasite: Bulut LLM seviyesine en yakın yerel modeldir. Terminoloji sadakati ve argo adaptasyonu en üst düzeydedir.",
             Description = "İnsan çevirmen seviyesine en yakın yerel modeldir. Edebi derinlik, argo uyarlaması ve tutarlı terminoloji çevirisi sağlar.",
             IsRecommended = false
         }

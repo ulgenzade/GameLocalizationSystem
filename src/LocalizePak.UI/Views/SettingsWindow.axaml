@@ -481,6 +481,10 @@
                                             <TextBlock Text="🎯 Kullanım Amacı:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SelectedLocalAiModel.Description}" FontSize="12" TextWrapping="Wrap"/>
                                         </Grid>
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <TextBlock Text="⭐ Tercih / Öneri Sebebi:" FontSize="12" FontWeight="SemiBold" Foreground="#81C784"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SelectedLocalAiModel.RecommendationReason}" FontSize="12" Foreground="#C8E6C9" TextWrapping="Wrap" FontWeight="Medium"/>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
 
