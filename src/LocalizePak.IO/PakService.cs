@@ -32,7 +32,7 @@ public sealed class PakService : IPakReader, IPakWriter
 
         await using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
 
-        // 1. Larian LSPak format kontrolü (Magic: "LSPK" = 0x4B50534C)
+        // 1. Larian LSPak format kontrolü (Magic: "LSPK" = 0x4B50534C) — Baldur's Gate 3 / Divinity
         if (LSPakHandler.IsLSPak(fs))
         {
             try
@@ -46,7 +46,7 @@ public sealed class PakService : IPakReader, IPakWriter
             }
             catch
             {
-                // Bilinmeyen LSPak varyantı durumunda diğer ayrıştırıcılara veya Heuristic moda devam et
+                // Bilinmeyen varyant durumunda diğer ayrıştırıcılara devam et
             }
         }
 
@@ -58,7 +58,43 @@ public sealed class PakService : IPakReader, IPakWriter
             return zipPak;
         }
 
-        // 3. Classic ID Tech / Quake / Valve PACK (Magic: "PACK")
+        // 3. Godot Engine .pck / .pak (Magic: "GDPC" = 0x43504447)
+        if (GodotPakHandler.IsGodotPak(fs))
+        {
+            try
+            {
+                var godotPak = await GodotPakHandler.ReadArchiveAsync(filePath, ct);
+                if (godotPak.Entries.Count > 0)
+                {
+                    godotPak.Format = PakFormat.Godot;
+                    return godotPak;
+                }
+            }
+            catch
+            {
+                // Geri dönüşe devam et
+            }
+        }
+
+        // 4. Unity Engine .pak / AssetBundle (Magic: "UnityFS" / "UnityWeb")
+        if (UnityPakHandler.IsUnityPak(fs))
+        {
+            try
+            {
+                var unityPak = await UnityPakHandler.ReadArchiveAsync(filePath, ct);
+                if (unityPak.Entries.Count > 0)
+                {
+                    unityPak.Format = PakFormat.Unity;
+                    return unityPak;
+                }
+            }
+            catch
+            {
+                // Geri dönüşe devam et
+            }
+        }
+
+        // 5. Classic ID Tech / Quake / Source / GoldSrc PACK (Magic: "PACK")
         if (ClassicPakHandler.IsClassicPak(fs))
         {
             var classicPak = await ClassicPakHandler.ReadArchiveAsync(filePath, ct);
@@ -66,7 +102,28 @@ public sealed class PakService : IPakReader, IPakWriter
             return classicPak;
         }
 
-        // 4. Unreal Engine .pak (Magic: 0x5A6F12E1 footer taraması)
+        // 6. Unreal Engine .pak (V1–V11+ / UE4 & UE5, Oodle, LZ4, Zlib, AES-256)
+        if (UnrealCuePakHandler.IsUnrealPak(fs))
+        {
+            try
+            {
+                var unrealPak = await UnrealCuePakHandler.ReadArchiveAsync(filePath, aesKey, ct);
+                if (unrealPak.Entries.Count > 0)
+                {
+                    return unrealPak;
+                }
+            }
+            catch (ArgumentException)
+            {
+                throw; // Geçersiz anahtar hatasını doğrudan fırlat
+            }
+            catch
+            {
+                // CUE4Parse açamazsa klasik/yerel Unreal ayrıştırıcısına (Adım 7) devam et
+            }
+        }
+
+        // 7. Klasik Unreal Engine Fallback (Legacy V1-V7 & Yerel V8-V11)
         byte[]? keyBytes = null;
         if (!string.IsNullOrWhiteSpace(aesKey))
         {
@@ -85,6 +142,7 @@ public sealed class PakService : IPakReader, IPakWriter
                     FilePath = filePath,
                     Version = footer.Version,
                     IsEncrypted = footer.IsEncrypted,
+                    AesKey = aesKey,
                     MountPoint = footer.MountPoint,
                     Format = PakFormat.Unreal,
                     Entries = entries
@@ -92,7 +150,7 @@ public sealed class PakService : IPakReader, IPakWriter
             }
         }
 
-        // 5. Heuristic İçerik Kurtarma Modu (Bilinmeyen veya Özel .pak Arşivleri)
+        // 8. Heuristic İçerik Kurtarma Modu (Özel / Bilinmeyen tüm .pak motorları için güvenlik ağı)
         var heuristicEntries = await HeuristicScanAsync(fs, ct);
         if (heuristicEntries.Count > 0)
         {
@@ -107,7 +165,7 @@ public sealed class PakService : IPakReader, IPakWriter
             };
         }
 
-        throw new InvalidDataException("Bu .pak dosyası geçerli bir Unreal Engine, Larian LSPak veya bilinen arşiv formatında değil.");
+        throw new InvalidDataException("Bu .pak dosyası geçerli bir Unreal Engine, Larian LSPak, CryEngine, Godot, Unity veya bilinen arşiv formatında değil.");
     }
 
     /// <inheritdoc/>
@@ -116,27 +174,51 @@ public sealed class PakService : IPakReader, IPakWriter
         PakEntry entry,
         CancellationToken ct = default)
     {
-        await using var fs = new FileStream(archive.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
-
         // Larian LSPak
-        if (LSPakHandler.IsLSPak(fs))
+        if (archive.Format == PakFormat.Larian)
         {
             return await LSPakHandler.ExtractEntryAsync(archive.FilePath, entry, ct);
         }
 
         // ZIP tabanlı
-        if (ZipPakHandler.IsZipPak(fs))
+        if (archive.Format == PakFormat.Zip)
         {
             return await ZipPakHandler.ExtractEntryAsync(archive.FilePath, entry, ct);
         }
 
+        // Godot Engine
+        if (archive.Format == PakFormat.Godot)
+        {
+            return await GodotPakHandler.ExtractEntryAsync(archive.FilePath, entry, ct);
+        }
+
+        // Unity Engine
+        if (archive.Format == PakFormat.Unity)
+        {
+            return await UnityPakHandler.ExtractEntryAsync(archive.FilePath, entry, ct);
+        }
+
         // Classic PACK
-        if (ClassicPakHandler.IsClassicPak(fs))
+        if (archive.Format == PakFormat.Classic)
         {
             return await ClassicPakHandler.ExtractEntryAsync(archive.FilePath, entry, ct);
         }
 
-        // Unreal Engine / Genel format
+        // Unreal Engine (Modern CUE4Parse önbellek veya çıkarma)
+        if (archive.Format == PakFormat.Unreal)
+        {
+            try
+            {
+                return await UnrealCuePakHandler.ExtractEntryAsync(archive.FilePath, entry, archive.AesKey, ct);
+            }
+            catch
+            {
+                // CUE4Parse doğrudan bulamazsa standart bayt ofsetinden okumayı dene
+            }
+        }
+
+        // Standart / Klasik ofset tabanlı çıkarma
+        await using var fs = new FileStream(archive.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
         if (entry.DataOffset < 0 || entry.CompressedSize < 0 || entry.CompressedSize > MaxEntrySize ||
             entry.DataOffset + entry.CompressedSize > fs.Length)
             throw new InvalidDataException($"Geçersiz girdi ofseti/boyutu: {entry.VirtualPath}");
@@ -154,28 +236,59 @@ public sealed class PakService : IPakReader, IPakWriter
         string mountPoint,
         IReadOnlyList<(string VirtualPath, byte[] Data)> files,
         CancellationToken ct = default,
-        PakFormat sourceFormat = PakFormat.Unknown)
+        PakFormat sourceFormat = PakFormat.Unknown,
+        string? aesKey = null)
     {
-        // ✅ KRİTİK: Orijinal arşivin formatına göre doğru serileştiriciyi kullan.
-        // Eskiden sadece dosya uzantısına bakılıyordu — bu Larian arşivlerini
-        // Unreal formatında yazmasına ve oyunun çökmesine yol açıyordu.
+        // 1. Larian LSPak formatı (DOS2 / Baldur's Gate 3)
         if (sourceFormat == PakFormat.Larian)
         {
             await LSPakHandler.WriteArchiveAsync(outputPath, files, ct);
             return;
         }
 
+        // 2. CryEngine / Lumberyard / ZIP tabanlı .pak
         if (sourceFormat == PakFormat.Zip)
         {
             await ZipPakHandler.WriteArchiveAsync(outputPath, files, ct);
             return;
         }
 
-        // Unreal Engine .pak yaz (sourceFormat == Unreal, Classic, Heuristic veya Unknown)
-        await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
-        await using var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8, leaveOpen: true);
+        // 3. Godot Engine .pck / .pak
+        if (sourceFormat == PakFormat.Godot)
+        {
+            await GodotPakHandler.WriteArchiveAsync(outputPath, files, ct);
+            return;
+        }
 
-        var entries = new List<(PakEntry Entry, byte[] CompressedData)>();
+        // 4. Classic ID Tech / Quake / GoldSrc PACK
+        if (sourceFormat == PakFormat.Classic)
+        {
+            await ClassicPakHandler.WriteArchiveAsync(outputPath, files, ct);
+            return;
+        }
+
+        // 5. Unity Engine AssetBundle .pak
+        if (sourceFormat == PakFormat.Unity)
+        {
+            await UnityPakHandler.WriteArchiveAsync(outputPath, files, ct);
+            return;
+        }
+
+        // 6. Unreal Engine .pak (V8-V11, AES-256 şifreleme ve SHA1 doğrulamasıyla)
+        byte[]? keyBytes = null;
+        bool isEncrypted = false;
+        if (!string.IsNullOrWhiteSpace(aesKey) && AesDecryptionHelper.ValidateKey(aesKey, out var parsedKey))
+        {
+            keyBytes = parsedKey;
+            isEncrypted = true;
+        }
+
+        var finalMountPoint = string.IsNullOrWhiteSpace(mountPoint) ? "../../../" : mountPoint;
+        if (!finalMountPoint.EndsWith('/')) finalMountPoint += "/";
+
+        await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
+
+        var entries = new List<PakEntry>();
 
         foreach (var (virtualPath, data) in files)
         {
@@ -183,19 +296,33 @@ public sealed class PakService : IPakReader, IPakWriter
             var compressed = CompressZlib(data);
             var entry = new PakEntry
             {
-                VirtualPath = virtualPath,
+                VirtualPath = virtualPath.TrimStart('/'),
                 DataOffset = fs.Position,
                 UncompressedSize = data.Length,
                 CompressedSize = compressed.Length,
-                Compression = CompressionMethod.Zlib
+                Compression = CompressionMethod.Zlib,
+                Hash = System.Security.Cryptography.SHA1.HashData(data),
+                IsEncrypted = false
             };
             await fs.WriteAsync(compressed, ct);
-            entries.Add((entry, compressed));
+            entries.Add(entry);
         }
 
         long indexOffset = fs.Position;
-        WriteIndex(writer, mountPoint, entries.Select(e => e.Entry).ToList());
-        WriteFooter(writer, indexOffset, fs.Position - indexOffset);
+        byte[] rawIndex = BuildUnrealIndex(finalMountPoint, entries);
+        byte[] indexToWrite = rawIndex;
+
+        if (isEncrypted && keyBytes != null)
+        {
+            indexToWrite = AesDecryptionHelper.Encrypt(rawIndex, keyBytes);
+        }
+
+        await fs.WriteAsync(indexToWrite, ct);
+
+        long indexSize = indexToWrite.Length;
+        byte[] indexSha1 = System.Security.Cryptography.SHA1.HashData(rawIndex);
+
+        WriteFooter(fs, indexOffset, indexSize, indexSha1, isEncrypted);
     }
 
     // ─── Unreal Engine Archive Helpers ────────────────────────────────────────
@@ -366,34 +493,43 @@ public sealed class PakService : IPakReader, IPakWriter
         return output.ToArray();
     }
 
-    private static void WriteIndex(BinaryWriter writer, string mountPoint, IReadOnlyList<PakEntry> entries)
+    private static byte[] BuildUnrealIndex(string mountPoint, IReadOnlyList<PakEntry> entries)
     {
-        writer.Write(mountPoint.Length + 1);
-        writer.Write(System.Text.Encoding.UTF8.GetBytes(mountPoint + "\0"));
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms, System.Text.Encoding.UTF8, leaveOpen: true);
+
+        byte[] mountBytes = System.Text.Encoding.UTF8.GetBytes(mountPoint + "\0");
+        writer.Write(mountBytes.Length);
+        writer.Write(mountBytes);
         writer.Write(entries.Count);
 
         foreach (var entry in entries)
         {
-            writer.Write(entry.VirtualPath.Length + 1);
-            writer.Write(System.Text.Encoding.UTF8.GetBytes(entry.VirtualPath + "\0"));
+            byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(entry.VirtualPath + "\0");
+            writer.Write(pathBytes.Length);
+            writer.Write(pathBytes);
             writer.Write(entry.DataOffset);
             writer.Write(entry.CompressedSize);
             writer.Write(entry.UncompressedSize);
             writer.Write((int)entry.Compression);
             writer.Write(entry.Hash ?? new byte[20]);
-            writer.Write((byte)0); // isEncrypted
+            writer.Write((byte)0); // isEncrypted entry block
             writer.Write((uint)0x10000); // blockSize
         }
+
+        writer.Flush();
+        return ms.ToArray();
     }
 
-    private static void WriteFooter(BinaryWriter writer, long indexOffset, long indexSize)
+    private static void WriteFooter(FileStream fs, long indexOffset, long indexSize, byte[] indexHash, bool isEncrypted)
     {
+        using var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8, leaveOpen: true);
         writer.Write(PakMagic);
         writer.Write((int)8); // Version 8
         writer.Write(indexOffset);
         writer.Write(indexSize);
-        writer.Write(new byte[20]); // Hash
-        writer.Write((byte)0); // isEncrypted
+        writer.Write(indexHash.Length == 20 ? indexHash : new byte[20]);
+        writer.Write((byte)(isEncrypted ? 1 : 0));
     }
 
     // ─── 5. Heuristic İçerik Kurtarıcısı ──────────────────────────────────────

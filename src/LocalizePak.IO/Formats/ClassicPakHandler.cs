@@ -92,4 +92,45 @@ public sealed class ClassicPakHandler
         await fs.ReadExactlyAsync(data, ct);
         return new MemoryStream(data);
     }
+
+    public static async Task WriteArchiveAsync(
+        string outputPath,
+        IReadOnlyList<(string VirtualPath, byte[] Data)> files,
+        CancellationToken ct = default)
+    {
+        await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
+        using var writer = new BinaryWriter(fs, Encoding.ASCII, leaveOpen: true);
+
+        // Header: 12 bytes: Magic (4) + DirOffset (4) + DirLength (4)
+        writer.Write(PACKMagic);
+        writer.Write((uint)0); // DirOffset placeholder
+        writer.Write((uint)0); // DirLength placeholder
+
+        var entries = new List<(string Name, uint Offset, uint Size)>();
+
+        foreach (var (path, data) in files)
+        {
+            ct.ThrowIfCancellationRequested();
+            uint offset = (uint)fs.Position;
+            await fs.WriteAsync(data, ct);
+            entries.Add((path, offset, (uint)data.Length));
+        }
+
+        uint dirOffset = (uint)fs.Position;
+        foreach (var (name, offset, size) in entries)
+        {
+            byte[] nameBytes = new byte[56];
+            byte[] rawName = Encoding.ASCII.GetBytes(name);
+            Array.Copy(rawName, nameBytes, Math.Min(rawName.Length, 55));
+            writer.Write(nameBytes);
+            writer.Write(offset);
+            writer.Write(size);
+        }
+        uint dirLength = (uint)(entries.Count * 64);
+
+        // Header güncelle
+        fs.Seek(4, SeekOrigin.Begin);
+        writer.Write(dirOffset);
+        writer.Write(dirLength);
+    }
 }

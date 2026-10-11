@@ -11,6 +11,7 @@
     <ApplicationIcon>Assets\glslogo.ico</ApplicationIcon>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+    <NoWarn>$(NoWarn);MSB3246</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -81,4 +81,26 @@ public static class AesDecryptionHelper
         result.Position = 0;
         return result;
     }
+
+    /// <summary>
+    /// AES-256-CBC ile veriyi şifreler (Unreal Engine &amp; Godot standartlarına uygun Zero padding).
+    /// </summary>
+    public static byte[] Encrypt(byte[] data, byte[] key, byte[]? iv = null)
+    {
+        iv ??= new byte[16];
+
+        int remainder = data.Length % 16;
+        int paddedLength = remainder == 0 ? data.Length : data.Length + (16 - remainder);
+        byte[] buffer = new byte[paddedLength];
+        Array.Copy(data, buffer, data.Length);
+
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+        aes.Mode = CipherMode.CBC;
+        aes.Padding = PaddingMode.None;
+
+        using var encryptor = aes.CreateEncryptor();
+        return encryptor.TransformFinalBlock(buffer, 0, buffer.Length);
+    }
 }

@@ -549,4 +549,128 @@ public class LocalizationTests
         var zh = AppSettings.GetMasterPromptForLanguage("简体中文");
         Assert.Contains("本地化", zh);
     }
+
+    [Fact]
+    public async Task PakService_WriteAndRead_UnrealFormatWithAes_Roundtrip()
+    {
+        var pakService = new LocalizePak.IO.PakService();
+        var tempFile = Path.Combine(Path.GetTempPath(), $"ue_aes_test_{Guid.NewGuid():N}.pak");
+        var aesKey = "0x11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF";
+
+        try
+        {
+            var files = new List<(string VirtualPath, byte[] Data)>
+            {
+                ("Game/Content/Localization/Game.locres", System.Text.Encoding.UTF8.GetBytes("LocresDataSample123")),
+                ("Game/Content/Config/DefaultGame.ini", System.Text.Encoding.UTF8.GetBytes("[Game]\nTitle=MyGame"))
+            };
+
+            await pakService.WriteAsync(tempFile, "../../../", files, sourceFormat: LocalizePak.Core.Enums.PakFormat.Unreal, aesKey: aesKey);
+
+            Assert.True(File.Exists(tempFile));
+
+            // Anahtarsız açmaya çalışıldığında şifreli olduğunu bildirmeli
+            var archive = await pakService.OpenAsync(tempFile, aesKey);
+            Assert.True(archive.IsEncrypted);
+            Assert.Equal(2, archive.Entries.Count);
+
+            var entry = archive.Entries.First(e => e.VirtualPath.Contains("Game.locres"));
+            using var stream = await pakService.ExtractEntryAsync(archive, entry);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            Assert.Equal("LocresDataSample123", content);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task ClassicPakHandler_WriteAndRead_Roundtrip()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"classic_test_{Guid.NewGuid():N}.pak");
+
+        try
+        {
+            var files = new List<(string VirtualPath, byte[] Data)>
+            {
+                ("scripts/menu.txt", System.Text.Encoding.ASCII.GetBytes("bind ESC menu")),
+                ("maps/start.bsp", new byte[] { 0x01, 0x02, 0x03, 0x04 })
+            };
+
+            await ClassicPakHandler.WriteArchiveAsync(tempFile, files);
+            Assert.True(File.Exists(tempFile));
+
+            var archive = await ClassicPakHandler.ReadArchiveAsync(tempFile);
+            Assert.Equal(2, archive.Entries.Count);
+
+            var menuEntry = archive.Entries.First(e => e.VirtualPath == "scripts/menu.txt");
+            using var stream = await ClassicPakHandler.ExtractEntryAsync(tempFile, menuEntry);
+            using var reader = new StreamReader(stream);
+            var text = await reader.ReadToEndAsync();
+            Assert.Equal("bind ESC menu", text);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task GodotPakHandler_WriteAndRead_Roundtrip()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"godot_test_{Guid.NewGuid():N}.pck");
+
+        try
+        {
+            var files = new List<(string VirtualPath, byte[] Data)>
+            {
+                ("res://locale/tr.po", System.Text.Encoding.UTF8.GetBytes("msgid \"Hello\"\nmsgstr \"Merhaba\""))
+            };
+
+            await GodotPakHandler.WriteArchiveAsync(tempFile, files);
+            Assert.True(File.Exists(tempFile));
+
+            var archive = await GodotPakHandler.ReadArchiveAsync(tempFile);
+            Assert.Single(archive.Entries);
+            Assert.EndsWith("locale/tr.po", archive.Entries[0].VirtualPath);
+
+            using var stream = await GodotPakHandler.ExtractEntryAsync(tempFile, archive.Entries[0]);
+            using var reader = new StreamReader(stream);
+            var text = await reader.ReadToEndAsync();
+            Assert.Contains("Merhaba", text);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task UnityPakHandler_WriteAndRead_Roundtrip()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"unity_test_{Guid.NewGuid():N}.pak");
+
+        try
+        {
+            var files = new List<(string VirtualPath, byte[] Data)>
+            {
+                ("Assets/Resources/dialogue.json", System.Text.Encoding.UTF8.GetBytes("{\"title\": \"Quest\"}"))
+            };
+
+            await UnityPakHandler.WriteArchiveAsync(tempFile, files);
+            Assert.True(File.Exists(tempFile));
+
+            var archive = await UnityPakHandler.ReadArchiveAsync(tempFile);
+            Assert.Single(archive.Entries);
+
+            using var stream = await UnityPakHandler.ExtractEntryAsync(tempFile, archive.Entries[0]);
+            Assert.True(stream.Length > 0);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }

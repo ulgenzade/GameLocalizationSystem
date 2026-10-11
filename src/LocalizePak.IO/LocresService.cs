@@ -10,19 +10,65 @@ namespace LocalizePak.IO;
 /// </summary>
 public sealed class LocresService : ILocresSerializer
 {
-    // .locres Magic GUID: {0E147475-674A-03FC-4B8F-3AD9E3C4E65B}
-    private static readonly byte[] LocresMagic =
+    // .locres Legacy Magic GUID: {0E147475-674A-03FC-4B8F-3AD9E3C4E65B}
+    private static readonly byte[] LocresMagicLegacy =
     [
         0x0E, 0x14, 0x74, 0x75, 0x67, 0x4A, 0x03, 0xFC,
         0x4B, 0x8F, 0x3A, 0xD9, 0xE3, 0xC4, 0xE6, 0x5B
     ];
 
+    // .locres Optimized Magic GUID: {0E147475-674A-03FC-4A15-909DC3377F1B}
+    private static readonly byte[] LocresMagicOptimized =
+    [
+        0x0E, 0x14, 0x74, 0x75, 0x67, 0x4A, 0x03, 0xFC,
+        0x4A, 0x15, 0x90, 0x9D, 0xC3, 0x37, 0x7F, 0x1B
+    ];
+
     /// <inheritdoc/>
-    public Task<LocresFile> DeserializeAsync(Stream stream, CancellationToken ct = default)
+    public async Task<LocresFile> DeserializeAsync(Stream stream, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        using var br = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
-        return Task.FromResult(Deserialize(br));
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+        if (bytes.Length < 16)
+            throw new InvalidDataException("Dosya çok küçük, geçerli bir .locres dosyası değil.");
+
+        // 1. CUE4Parse FTextLocalizationResource ile evrensel ayrıştırma (Tüm UE4/UE5 sürümleri)
+        try
+        {
+            var cueArchive = new CUE4Parse.UE4.Readers.FByteArchive("LocresData.locres", bytes);
+            var cueLocres = new CUE4Parse.UE4.Localization.FTextLocalizationResource(cueArchive);
+            if (cueLocres.Entries.Count > 0)
+            {
+                var file = new LocresFile { Version = LocresVersion.V3 };
+                foreach (var nsKvp in cueLocres.Entries)
+                {
+                    var ns = new LocresNamespace { Name = nsKvp.Key.Str ?? string.Empty };
+                    foreach (var entryKvp in nsKvp.Value)
+                    {
+                        ns.Entries.Add(new LocalizationEntry
+                        {
+                            Key = entryKvp.Key.Str ?? string.Empty,
+                            KeyHash = (uint)(entryKvp.Key.Str?.GetHashCode() ?? 0),
+                            SourceText = entryKvp.Value.LocalizedString ?? string.Empty,
+                            TranslatedText = entryKvp.Value.LocalizedString ?? string.Empty,
+                            NamespaceName = ns.Name
+                        });
+                    }
+                    file.Namespaces.Add(ns);
+                }
+                return file;
+            }
+        }
+        catch
+        {
+            // CUE4Parse ayrıştıramazsa yerel geri dönüş mantığına geç
+        }
+
+        // 2. Klasik Yerel Ayrıştırıcı (Geri Dönüş)
+        using var br = new BinaryReader(new MemoryStream(bytes), System.Text.Encoding.UTF8, leaveOpen: false);
+        return Deserialize(br);
     }
 
     /// <inheritdoc/>
@@ -39,9 +85,11 @@ public sealed class LocresService : ILocresSerializer
 
     private static LocresFile Deserialize(BinaryReader br)
     {
-        // Magic doğrulama
+        // Magic doğrulama (Hem Legacy hem Optimized CityHash GUID kabul edilir)
         var magic = br.ReadBytes(16);
-        if (!magic.SequenceEqual(LocresMagic))
+        bool isLegacy = magic.SequenceEqual(LocresMagicLegacy);
+        bool isOptimized = magic.SequenceEqual(LocresMagicOptimized);
+        if (!isLegacy && !isOptimized)
             throw new InvalidDataException("Geçersiz .locres magic. Bu bir lokalizasyon dosyası değil.");
 
         var version = (LocresVersion)br.ReadByte();
@@ -106,8 +154,8 @@ public sealed class LocresService : ILocresSerializer
 
     private static void Serialize(BinaryWriter bw, LocresFile locres)
     {
-        // Magic
-        bw.Write(LocresMagic);
+        // Magic (V3 ise Optimized, değilse Legacy)
+        bw.Write(locres.Version == LocresVersion.V3 ? LocresMagicOptimized : LocresMagicLegacy);
         bw.Write((byte)locres.Version);
 
         // V2+ string table (sadece basit bir isim listesi yaz)

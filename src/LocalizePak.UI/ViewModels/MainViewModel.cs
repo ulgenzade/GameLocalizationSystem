@@ -1465,7 +1465,8 @@ public sealed partial class MainViewModel : ObservableObject
             var filesToWrite = await PrepareAllArchiveFilesForExportAsync();
 
             await _pakService.WriteAsync(outputPath, mountPoint, filesToWrite,
-                sourceFormat: _currentArchive.Format);
+                sourceFormat: _currentArchive.Format,
+                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey));
 
             LastExportedDirectory = Path.GetDirectoryName(outputPath);
             HasExportedDirectory = !string.IsNullOrEmpty(LastExportedDirectory);
@@ -1487,10 +1488,23 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_currentLocresFile is null || _currentArchive is null) return;
 
+        var baseName = Path.GetFileNameWithoutExtension(_currentArchive.FileName);
+        string suggestedPatch;
+        if (_currentArchive.Format == PakFormat.Unreal)
+        {
+            suggestedPatch = baseName.EndsWith("_P", StringComparison.OrdinalIgnoreCase)
+                ? baseName + "1.pak"
+                : baseName + "_P.pak";
+        }
+        else
+        {
+            suggestedPatch = baseName + "-Patch.pak";
+        }
+
         var outputPath = await ShowSaveFileDialogAsync(
             "Yama paketi kaydet (_P.pak)",
             [["*.pak"]],
-            Path.GetFileNameWithoutExtension(_currentArchive.FileName) + "-Turkish_P.pak");
+            suggestedPatch);
 
         if (outputPath is null) return;
 
@@ -1529,7 +1543,8 @@ public sealed partial class MainViewModel : ObservableObject
             var mountPoint = _currentArchive.MountPoint;
             await _pakService.WriteAsync(outputPath, mountPoint,
                 filesToWrite,
-                sourceFormat: _currentArchive.Format);
+                sourceFormat: _currentArchive.Format,
+                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey));
 
             LastExportedDirectory = Path.GetDirectoryName(outputPath);
             HasExportedDirectory = !string.IsNullOrEmpty(LastExportedDirectory);

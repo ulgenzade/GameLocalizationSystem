@@ -22,5 +22,11 @@ public enum PakFormat
     Classic = 4,
 
     /// <summary>Heuristic kurtarma modu (Format tespit edilemedi, içerik tarandı).</summary>
-    Heuristic = 5
+    Heuristic = 5,
+
+    /// <summary>Godot Engine .pck / .pak (Magic: "GDPC" 0x43504447).</summary>
+    Godot = 6,
+
+    /// <summary>Unity AssetBundle / UnityFS .pak (Magic: "UnityFS").</summary>
+    Unity = 7
 }

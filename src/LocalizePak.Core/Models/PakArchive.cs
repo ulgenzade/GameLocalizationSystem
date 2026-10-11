@@ -19,6 +19,9 @@ public sealed class PakArchive
     /// <summary>Arşiv AES ile şifrelenmiş mi?</summary>
     public bool IsEncrypted { get; set; }
 
+    /// <summary>Arşivi açmakta kullanılan AES anahtarı (hex).</summary>
+    public string? AesKey { get; set; }
+
     /// <summary>Arşiv mount noktası (sanal dosya sistemi kökü).</summary>
     public string MountPoint { get; set; } = string.Empty;
 
