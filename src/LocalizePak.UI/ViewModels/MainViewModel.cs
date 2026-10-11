@@ -208,8 +208,8 @@ public sealed partial class MainViewModel : ObservableObject
         [
             "deepseek/deepseek-chat",            // DeepSeek V3 (En Popüler & Çok Ekonomik)
             "deepseek/deepseek-r1",              // DeepSeek R1 (Derin Akıl Yürütme)
-            "google/gemini-2.5-flash",          // Google Gemini Flash
-            "google/gemini-2.5-pro",            // Google Gemini Pro
+            "google/gemini-3.8-flash",          // Google Gemini 3.8 Flash (Yeni Nesil)
+            "google/gemini-3.1-pro",            // Google Gemini 3.1 Pro (Derin Akıl Yürütme)
             "anthropic/claude-3.7-sonnet",       // Claude 3.7 Sonnet
             "anthropic/claude-3.5-haiku",        // Claude 3.5 Haiku
             "openai/gpt-4o-mini",                // OpenAI GPT-4o Mini
@@ -252,14 +252,11 @@ public sealed partial class MainViewModel : ObservableObject
     public static IReadOnlyList<string> GeminiModels { get; } =
         [
             // ─── 3.x Serisi (En Güncel & Önerilen) ───
-            "gemini-3.8-flash",          // En yeni Flash (En Hızlı & Yüksek Kota)
+            "gemini-3.8-flash",          // En yeni Flash (En Hızlı & Yüksek Kota - Varsayılan)
             "gemini-3.7-flash",          // 3.7 Flash
             "gemini-3.6-flash",          // Stabil GA Flash
             "gemini-3.5-flash-lite",     // Yüksek Hız / Düşük Maliyet
-            "gemini-3.1-pro",            // Gelişmiş Akıl Yürütme
-            // ─── 2.5 Serisi ───
-            "gemini-2.5-pro",
-            "gemini-2.5-flash"
+            "gemini-3.1-pro"             // Gelişmiş Akıl Yürütme & Edebi Çeviri
         ];
 
     public static IReadOnlyList<string> GroqModels { get; } =
@@ -1679,8 +1676,8 @@ public sealed partial class MainViewModel : ObservableObject
             // Kaldırılan Gemini modellerini yeni modele otomatik yönlendir
             var savedGeminiModel = settings.GeminiModel;
             var retiredGeminiModels = new HashSet<string> {
+                "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite",
                 "gemini-2.0-flash", "gemini-2.0-flash-lite",
-                "gemini-2.5-flash-lite",
                 "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-1.0-pro"
             };
             GeminiModel = string.IsNullOrWhiteSpace(savedGeminiModel) || retiredGeminiModels.Contains(savedGeminiModel)

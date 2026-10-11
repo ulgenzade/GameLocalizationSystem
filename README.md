@@ -38,7 +38,7 @@ Lütfen ayrıntılı dokümantasyonu görüntülemek için tercih ettiğiniz dil
   - **DeepInfra (`deepinfra.com`)**: Yüksek kotalı ve ekonomik açık kaynak sunucular.
   - **Perplexity AI (`perplexity.ai`)**: Sonar Pro ve Sonar modelleriyle gerçek zamanlı web doğrulama.
 - **Resmi AI Sağlayıcıları:**
-  - **Google Gemini** (Gemini 2.5 Pro, 2.0 Flash)
+  - **Google Gemini** (Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.1 Pro)
   - **Groq Cloud** (GPT-OSS, Qwen, Llama ultra-düşük gecikmeli çıkarım)
   - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet & Haiku)
   - **OpenAI** (GPT-4o, GPT-4o Mini, o1/o3 serisi)
@@ -168,7 +168,7 @@ chmod +x scripts/build-linux.sh
   - **DeepInfra (`deepinfra.com`)**: Cost-effective, high-quota open-source model hosting.
   - **Perplexity AI (`perplexity.ai`)**: Real-time web-grounded validation using Sonar and Sonar Pro.
 - **First-Party AI Providers:**
-  - **Google Gemini** (Gemini 2.5 Pro, 2.0 Flash)
+  - **Google Gemini** (Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.1 Pro)
   - **Groq Cloud** (Ultra-low latency inference for Llama, Qwen, and custom models)
   - **Anthropic Claude** (Claude 3.7 Sonnet, Claude 3.5 Sonnet & Haiku)
   - **OpenAI** (GPT-4o, GPT-4o Mini, o1/o3 series)

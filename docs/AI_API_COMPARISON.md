@@ -8,7 +8,7 @@ Oyun yerelleştirme süreçleri için en uygun AI servislerinin kapsamlı karş�
 
 | Yapay Zeka Servisi | Girdi (1M Token) | Çıktı (1M Token) | Bağlam Önbellekleme | Özel Direktif | Değerlendirme |
 |---|---|---|---|---|---|
-| **Google Gemini 2.5/3.5 Flash** | $0.25–$0.30 | $1.50–$2.50 | ✅ %75–90 indirimli | ✅ Mükemmel | ⭐⭐⭐⭐⭐ **Ana Motor** |
+| **Google Gemini 3.8/3.7 Flash** | $0.25–$0.30 | $1.50–$2.50 | ✅ %75–90 indirimli | ✅ Mükemmel | ⭐⭐⭐⭐⭐ **Ana Motor** |
 | **OpenAI GPT-4o mini** | $0.15 | $0.60 | ✅ %50 indirimli | ✅ Yüksek | ⭐⭐⭐⭐ Yedek Motor |
 | **DeepSeek V3/V4 Flash** | $0.14–$0.28 | $0.28–$0.66 | ✅ Düşük maliyetli | ✅ Güçlü Türkçe | ⭐⭐⭐⭐ Ekonomik |
 | **DeepL API** | ~$27.50/1M karakter | N/A | ❌ Yok | ❌ Sınırlı | ⭐ Yüksek Maliyet |
