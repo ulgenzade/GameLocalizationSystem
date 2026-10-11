@@ -85,7 +85,7 @@ Projenin geliştirilmesinde aşağıdaki uzmanlık becerileri (`.agents/skills`)
 
 ### 1. Depoyu Klonlama
 ```bash
-git clone https://github.com/kullaniciadi/GameLocalizationSystem.git
+git clone https://github.com/ulgenzade/GameLocalizationSystem.git
 cd GameLocalizationSystem
 ```
 
