@@ -21,26 +21,58 @@ public partial class MainWindow : Window
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         e.DragEffects = DragDropEffects.Copy;
+        e.Handled = true;
     }
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
-        var files = e.DataTransfer?.Items.OfType<IStorageItem>().Select(i => i.TryGetLocalPath()).Where(p => p != null).ToList();
-        if (files != null && files.Count > 0)
+        try
         {
-            var firstFile = files.FirstOrDefault();
-            if (!string.IsNullOrEmpty(firstFile))
+            e.Handled = true;
+            if (e.DataTransfer == null) return;
+
+            string? localPath = null;
+
+            // 1. Dosya listesi (Avalonia DataTransferExtensions.TryGetFiles)
+            var files = e.DataTransfer.TryGetFiles();
+            if (files != null && files.Length > 0)
             {
-                var ext = System.IO.Path.GetExtension(firstFile).ToLowerInvariant();
+                localPath = files[0].TryGetLocalPath();
+            }
+
+            // 2. Tekil dosya (TryGetFile)
+            if (string.IsNullOrEmpty(localPath))
+            {
+                var file = e.DataTransfer.TryGetFile();
+                localPath = file?.TryGetLocalPath();
+            }
+
+            // 3. Metin/Yol yedeği
+            if (string.IsNullOrEmpty(localPath))
+            {
+                var text = e.DataTransfer.TryGetText();
+                if (!string.IsNullOrWhiteSpace(text) && System.IO.File.Exists(text.Trim()))
+                {
+                    localPath = text.Trim();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(localPath) && System.IO.File.Exists(localPath))
+            {
+                var ext = System.IO.Path.GetExtension(localPath).ToLowerInvariant();
                 if (ext is ".pak")
                 {
-                    await ViewModel.OpenPakFromPathAsync(firstFile);
+                    await ViewModel.OpenPakFromPathAsync(localPath);
                 }
                 else
                 {
-                    await ViewModel.OpenSingleFileFromPathAsync(firstFile);
+                    await ViewModel.OpenSingleFileFromPathAsync(localPath);
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DragDrop hatası: {ex}");
         }
     }
 

@@ -37,7 +37,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- WINUI 3 / WINDOWS 11 FLUENT 2 ANA DÜZEN                            -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}">
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}" DragDrop.AllowDrop="True">
 
         <!-- ─── 1. WINUI 3 BAŞLIK ÇUBUĞU & MENÜ BARI ─── -->
         <Border Grid.Row="0"
@@ -166,7 +166,7 @@
                                 </Border>
 
                                 <!-- Henüz Yüklenmedi Kartı (WinUI 3 DragDrop Zone) -->
-                                <Border Background="#1C1C1C" BorderBrush="#2D2D2D" BorderThickness="1" CornerRadius="8" Padding="14" IsVisible="{Binding !IsPakLoaded}">
+                                <Border Background="#1C1C1C" BorderBrush="#2D2D2D" BorderThickness="1" CornerRadius="8" Padding="14" IsVisible="{Binding !IsPakLoaded}" DragDrop.AllowDrop="True">
                                     <StackPanel Spacing="6" HorizontalAlignment="Center">
                                         <TextBlock Text="📦" FontSize="26" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Henüz .pak Dosyası Yüklenmedi" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>

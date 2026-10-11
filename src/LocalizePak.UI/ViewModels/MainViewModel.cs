@@ -590,8 +590,11 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task OpenPakAsync()
     {
         var path = await ShowOpenFileDialogAsync(
-            "pak dosyası seç",
-            [["*.pak"]]);
+            "PAK Arşivi Seç (.pak)",
+            [
+                ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Tüm Dosyalar (*.*)", "*.*"]
+            ]);
         if (path is null) return;
         await OpenPakFromPathAsync(path);
     }
@@ -2347,8 +2350,13 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task OpenSingleFileAsync()
     {
         var path = await ShowOpenFileDialogAsync(
-            "Lokalizasyon Dosyası Seç (.locres, .json, .csv, .xml, .po)",
-            [["*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"]]);
+            "Lokalizasyon veya Arşiv Dosyası Seç (.locres, .pak, .json, .csv, .xml)",
+            [
+                ["Tüm Desteklenen Dosyalar", "*.locres", "*.pak", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
+                ["Lokalizasyon Dosyaları (*.locres, *.json, ...)", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
+                ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Tüm Dosyalar (*.*)", "*.*"]
+            ]);
 
         if (path is null) return;
         await OpenSingleFileFromPathAsync(path);
@@ -2357,6 +2365,13 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task OpenSingleFileFromPathAsync(string path)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+
+        // Kullanıcı bu diyalogdan .pak seçtiyse otomatik olarak .pak yükleyicisine yönlendir
+        if (Path.GetExtension(path).Equals(".pak", StringComparison.OrdinalIgnoreCase))
+        {
+            await OpenPakFromPathAsync(path);
+            return;
+        }
 
         try
         {
