@@ -11,8 +11,8 @@ GameLocalizationSystem projesine katkıda bulunmak için aşağıdaki standartla
 dotnet --version  # 8.0 veya üzeri olmalı
 
 # Projeyi klonla
-git clone https://github.com/kullanici/GameLocalizationSystem.git
-cd GameLocalizationSystem/src
+git clone https://github.com/ulgenzade/GameLocalizationSystem.git
+cd GameLocalizationSystem
 
 # Bağımlılıkları yükle
 dotnet restore

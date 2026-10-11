@@ -39,3 +39,8 @@ appsettings*.local.json
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Local Research & Draft Notes (kept locally, excluded from git)
+read/
+docs/oku.txt
+docs/README.md

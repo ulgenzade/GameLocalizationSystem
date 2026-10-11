@@ -367,7 +367,7 @@ Bu prompt ile oluşturulan kod iskeletine CUE4Parse veya Unpaker gibi mevcut
 açık kaynak kütüphaneleri entegre ederek .pak ayrıştırma işlemini tamamlayın.
 Oodle sıkıştırma için oyunun kendi oo2core_9_win64.dll dosyasını kullanın.
 
-Proje deposu: https://github.com/kullanici/GameLocalizationSystem
+Proje deposu: https://github.com/ulgenzade/GameLocalizationSystem
 Lisans: MIT
 
 ================================================================================
