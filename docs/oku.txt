@@ -1,0 +1,486 @@
+ uygulamayı geliştirilebilecek yönü var mı diye araştır. uygulamanın eksiği, hatası, bugı var mı araştır.
+
+  Thought for 1m 7s, searched for 3 patterns, read 3 files
+
+GameLocalizationSystem – Geliştirilebilecek Yönler, Eksikler ve Olası Hatalar
+
+Aşağıdaki gözlemler, kod incelemesi (尤其是 MainViewModel.cs, PakService.cs, BatchTranslationOrchestrator.cs ve diğer hizmet sınıfları) ve proje dokümantasyonuna dayanılarak Derlenmiştir. Her maddeyi “İyileştirme”, “Eksiklik” veya “Potansiyel Hata” olarak işaretledim; bazıları birbirini tamamlayabilir ve tek bir PR içinde birden çokiązım giderebilir.
+
+---
+🛠️ 1. Performans & Kaynak Yönetimi
+
+┌────────────────┬─────────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────┐
+│     Bölge      │                              Açıklama   │                       Öneri                        │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ MainViewModel.CreateProvider() her çağr │ Tek bir, uygulama‑geniş HttpClient (veya           │
+│ HttpClient     │ HttpClient örneği üretir ve asla Dispose edilmez. Uzun translations │ IHttpClientFactory) örneği oluşturun ve onu        │
+│ ömrü           │  sırasında soket tükünmesi ve DNS çözme gecikmeleri ortaya          │ sağlayıcıya enjekte edin; iş bittiğinde yalnızca   │
+│                │ çıkabilir.                                                          │ sağlayıcıyı temizleyin.                            │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│ Translation    │ BatchTranslationOrchestrator içinde oluşturulan HttpClient benzer   │ Orchestrator’ın Dispose metodu ekleyerek içerdiği  │
+│ orchestrator   │ şekilde serbest bırakılmaz.             │ istemciyi kapatın; MainViewModel’de using veya     │
+│                │                                                                     │ finally bloğunda çağırın.                          │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ .pak çıkarma ve yazma sırasında tüm gir │ Girişleri akış tabanlı işleyin: her giriş okunur,  │
+│ Bellek baskısı │ (List<(string,byte[])>) alınır; büyük oyunlar (centaintes MB‑GB)    │ çevrilir ve hemen çıktı akışına yazılır; bu sayede │
+│                │ için bu durum bellek tüketimini artırabilir.                        │  sadece bir giriş bellekte tutulur.                │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ PakService.WriteAsync her zaman Compres │ giriş PakEntry.Compression bilgisini koruyarak     │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ HeuristicScanAsync sadece ilk 16 MB’i tarar; büyük paklerde yerini  │ Tarama boyunu yapılandırılabilir yapın (veya tüm   │
+│ Heuristic      │ geçen .locres/XML blokları kaçırılabilir. Ayrıca yanlıs pozitifler  │ dosyayı akışla tarayın) ve bulunan blokların       │
+│ tarama         │ (ör. rastgele binary veri) üretebilir.                              │ geçerli bir başlık/son 발표 kontrolü ekleyin       │
+│                │                                                                     │ (Locres magic, XML declara‑tıon vb.).              │
+└────────────────┴─────────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────┘
+
+---
+🧩 2. Çeviri İş Akışı & Kalite Kontrolü
+
+┌──────────────────┬───────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────┐
+│      Bölge       │                     Açıklama                      │                                Öneri                                │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Önce çevrilmiş   │ Aynı metin birden fazla pakette veya farklı       │ Basit bir çeviri belleği (ör. key → çeviri) JSON/SQLite olarak      │
+│ metinlerin       │ oturumlarda tekrar edilirse AI’ya yeniden         │ tutun; çevirmeden önce bu bellekte arama yapın, eşleşirse AI’ya     │
+│ önbelleği (TM)   │ gönderilir → maliyet ve süre artar.                                                         │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ İzin verilen     │ Şu anda sadece Kaynak ve Hedef dil seçimi var;    │ “Tüm dilleri tara” modu ekleyin, her girişin kaynak dilini otomatik │
+│ diller / kýllar  │ bir paketteki birden fazla dil (ör. kangdetect‑benzeri kütüphane) ve aynı hedef dile        │
+│                  │ metinleri, alt‑yazı dosyaları) desteklenmiyor.    │ çevirin.                                                            │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Değişken /       │ UI’da HasError ve OverflowRisk bayrakları var ama │ Otomatik “variable‑repair” komutu: çeviride eksik veya fazlal {0},  │
+│ etiket           │  otomatik düzeltme yok. Kullanıcı her <tag> vb. bulunursa uyarı ver ve bir düğmeyle         │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Çeviri kalitesi  │ Şu anda sadece tamamlandı/hata sayısı             │ İsteğe bağlı olarak çeviriyi aynı model üzerinden                   │
+│ skorlaması       │ gösteriliyor; çevirin vocabulary/fluency gibi     │ “back‑translation” yapıp orijiniale benzerlik skorunu gösterin,     │
+│                  │ niteliksel ölçümler yok.                          │ veya LanguageTool benzeri bir dil‑kontrolü entegre edin.            │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Batch            │ RetryErrorsAsync sadece Status == Error olan      │ Orchestrator’dan ayrıntılı hata kodu (HttpStatusCode,               │
+│ hatalarının      │ işaretleri tekrar çevirir; ancak çeviific error) alıp、LocalizationEntry.Notes alanına      │
+│ izolasyonu       │  Language‑specific güvenlik filtresi (403) gibi   │ kaydedin; UI’da bu nota gösterip “Yaklaşık neden” açıklaması sunun. │
+│                  │ hatalar Error olarak işaretlenmeyebilir.          │                                                                     │
+├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Plural /         │ .locres formatı tekil/çoğul ayrımı desteklemez;   │ Gelişmiş bir “Plural Handler” eklensin: kullanıcı “{0} item → {0}   │
+│ çillişkel        │ bazı oyunlar (özellikle RPG) meta‑veriYLE sayısal │ öğe / {0} öğeler” gibi kalıplarını tanımlasın, orchestrator bu      │
+│                  │  biçimler kullanır.                               │ kalıplara göre çeviriyi bölüp birlikte birleştirsin.                │
+└──────────────────┴───────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────┘
+
+---
+🎨 3. Kullanıcı Arayüzü & Kullanılabilirlik
+
+┌───────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
+│       Bölge       │                 Açıklama                          Öneri                                    │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│                   │ Şu anda sadece koyu (WinUI Fluent 2)     │ Settings‑e “Tema: Açık / Koyu / Sistem” seçeneği ekleyin; App.xaml içinde   │
+│ Tema değiştirme   │ tema var; açık tema veya sistem‑temayı   │ tema kaynaklarını dinamik olarak değiştirin.                                │
+│                   │ takip etme seçeneği yok.                                                                   │
+│ içi düzenleme     │ veri‑grid içinde doğrudan düzenleme      │ DataGrid’e ek bir kolon (“Override”) ekleyin; değişiklikler GlossaryList’e  │
+│                   │ olsaydı akış daha hızlı olur.            │ yansısın ve anlık olarak çeviride etkili olsun.                             │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ İlerleme          │ Tek bir anlık durum çubuğu var; daha     │ “Log” sekmesi (virtualized ListView) ekleyin ve orchestrator’dan            │
+│ penceresi ayrı    │ ayrıntılı log (hangi batch’de,哪些 token │ IProgress<LogMessage> üzerinden mesaj alın; bu sayede kullanıcı consol gibi │
+│ ayrı              │  tüketildi, önbellek vuruş oranı vb.)    │  bir görünüm elde eder.                                                     │
+│                   │ gösterilmiyor.                                                                             │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Çevrilecek        │ Kullanıcı genellikle çevirmek istediği   │ Paket açılırken namespace listesini alıp, bir checked‑listbox (veya         │
+│ satırları         │ sadece certain namespacelarını (ör.      │ treeview)’da gösterin; kullanıcı seçtiği isim alanlarına göre sadece o      │
+│ ön‑filtreleme     │ “UI”, “Dialogs”) seçer; şu anda     nEntries doldurun.                                     │
+│ Klavye            │ kullanılanlar (“Çeviriyi Başlat”,        │  <kbd>Ctrl+R</kbd> = Hata Yeniden Deneme, <kbd>Ctrl+E</kbd> = Çıktı Klasörü │
+│ kısayolları       │ “Hatalıları Yeniden Dene”, “Çıktı        │  gibi bağlamalar ekleyin.                                                   │
+│                   │ Klasörünü Aç”) için kısayol yok.         │                                                                             │
+└───────────────────┴──────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────┘
+
+---
+📦 4. Paket & Yama İşlevleri
+
+Bölge: Şifrelı paket koruma
+Açıklama: WriteAsync her zaman şifresiz paket üretir; kull üzerine aynı şifreleyle yama yapmak isteyebilir (özellikle
+anti‑cheat sistemleri şifreyi zorunlu kılar).
+Öneri: WriteAsync’e bir preserveEncryption: bool parametresi ekleyin; true ise orijinal PakFooter.IsEncrypted ve AES IV’i kopyalanır ve sadece
+.locres bloğu şifresiz yazılır (VEYA aynı anahtar ile yeniden şifreleme yapılır).
+────────────────────────────────────────
+Bölge: Yama paketi compression seçimi
+Açıklama: Şu anda yama paketi daima Zlib ile sıkıştırılır; orijinal paket LZ4/Zstd kullanıyorsa yama dosyası boyutu gereksiz olarak büyür.
+Öneri: Orijinal paket comp.method’sını PakArchive.Compression (veya ilk girişten) okuyup aynı yöntemi kullanın.
+────────────────────────────────────────
+Bölge: Çıktı klasörü isimlendirme
+Açıklama: Exports/YYYY-MM-DD_HH-mm-ss_{Bağlam}_{DosyaAdı} çok uzun olabiliyor; özellikle çok derin yollarda Windows MAX_PATH (260) sınırına
+takılabilir.
+Öneri: Tarih‑saat kısmını opsiyonel yapın veya kısa bir hakullanın; klasör yolu uzunluğunu kontrol edip kullanıcıya
+Öneri: “Test Başlat” butonu: yama paketini geçici bir klasöre çıkarıp, oyun yürütülebilirini (eğer yol biliniyorsa) geçici -mod ya da -pak
+argümanıyla çalıştırın; çıkış kodu ve logları yakalayın.
+────────────────────────────────────────
+Bölge: Paket içeriği görsel öni̇zi
+Açıklama: Kullanıcı paketteki dosyaları isimlerdenだけ görür; içerik (örnek bir görsel, ses, model) hakkında bilgi yoktur.
+Öneri: Paketteki varlıklardan bir ön‑izleme penceresi (ör. resim için thumbnail, model için wireframe, ses için waveform) ekleyin – bu özellikle
+“wrong asset type” hatalarını önler.
+
+---
+🔧 5. Güvenlik & Yapılandırma
+
+┌─────────────────────┬────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────┐
+│        Bölge        │                      Açıklama                      │                             Öneri                              │
+├─────────────────────┼────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ API anahtarı        │ Anahtarlar pezelleşmiş JSON (settings.json) içinde │ Windows Credential Manager (veya macOS Keychain, Linux Secret  │
+│ saklama             │  düz metin olarak tutulur; başka büzerinden anahtarları depolayın; uygulama başlarken   │
+│                     │  kötü niyetli bir eklenti bu dosyayı okuyabilir.   │ burada çekip, bellekte sadece kısa süreli tutun.               │
+├─────────────────────┼────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Proxy / yönlendirme │ Kurumsal ortamlarda kullanıcılar be proxy adresi, port, kullanıcı adı/şifre alanları    │
+│  desteği            │ zorunlu olabilir; şu anda sadece doğrudan bağlantı │ ekleyin ve HttpClientHandler.Proxy üzerinden uygulayın.        │
+│                     │  deneyiliyor.                                                                           │
+├─────────────────────┼────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ İstek zaman aşımı   │ 120 s sabit zaman aşımı; bazı modeller (özellikle  │ Zaman aşımını ayarlanabilir (default 120 s) yapın; Polly       │
+│ ve yeniden deneme   │ uzun bağlamlı) daha çok zaman ihtiyaç duyabilir,   │ kullanarak 429 dışındaki kısa süreli ağ hataları için de       │
+│ 정치ке              │ natomiast kısa isteklerde gereksizş bekleme süresi ile yeniden deneme ekleyin.          │
+┌────────────────┬─────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────┐
+│     Bölge      │                      Açıklama                       │                               Öneri                                │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Birim test     │ Şu anda yalnızca 4 test var (OutputManager,         │ PakService için farklı paket versiyonları (V1‑V11, LSPak, ZIP,     │
+│ kapsamı        │ MaskingEngine, Xml/Json parser, Glossary CSV). Core │ Classic) ve korrupt veri senaryoları için xUnit testleri yazın;    │
+│                │  ve IO paketleri için çok az test.                  │ Test veri paketlerini tests/TestData/ klasörüne ekleyin.           │
+├────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Entegrasyon    │ Gerçek bir oyunun .pak dosyası üzerinden            │ basit bir test paketi (birkaç .locres girişi olan minimal unreal   │
+│ testleri       │ çeviri‑yama akışı end‑to‑end test edilmp, CI içinde tüm akışı yürütüp MD5/byte‑by‑byte       │
+│                │                                                     │ karşılaştırma yapın.                                               │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Ön‑commit      │ Kod formatı (dotnet format) ve analiz (dotnet       │ pre‑commit hook (husky/lefthook) ekleyerek her commit’te format ve │
+│ hook’ları      │ analyzers) elle çalıştırılıyor; gözden kaçabilecek  │  analiz otomatik çalıştırılsın.                                    │
+│                │ stil hataları olabilir.                                                                      │
+│ 1       │ HttpClient yaşam döngüsünü düzeltmek (tekton veya      │ Soket kaçakları ortadan kalkar, performans artar, bağlantı hataları     │
+│         │ factory)                                               │ azaltılır                                                               │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 2       │ Çeviri belleği (TM) eklemek                            │ Tekrarlanan maliyet %30‑%70 azalır (özellikle büyük oyunlar için)       │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 3       │ Türkçe karakter / değişken doğrulama ve otomatik       │ Kullanıcı el‑işini azaltır, oyun içinde eksik değişken hatası önlenir   │
+│         │ onarım                                                                                               │
+│ 6       │ Güvenli API anahtarı depolama (Credential Manager)     │ Sistem güvenliği artar, anahtar izi sızdırmaz                           │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 7       │ Test paketlerini artırıp CI’ye entegrasyon testleri    │ Gelecek değişikliklerde geriye dönük uyumluluk garantisi altına alınır  │
+│         │ eklemek                                                │                                                                         │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 8       │ Akıllı filtre / namespace‑seçim kutusu                 │ Kullanıcı ilgilendiği bölümü hızlıca bulur, veri çakışma riski azalır   │
+└─────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Bu önerileri projenin yol haritasında kısa‑orta‑uzun vadeli olarak planlayıp, her birini ayrı bir feature dalı veyaissue olarak takip edebilirsiniz. Her maddeyi tek başına deneyip, gerekirse A/B test (örnek varsayılan veya yeni TM modü) yaparak katkı ölçebileceğinizi unutmayın.
+
+Eğer belirli bir alandaki kod parçacığını daha derinlemesine incelemek ya da bir prototip yapmak istersen, sadece söylemen yeterli – ilgili sınıfı ya da metodu paylaşabilir ve birlikte inceleme yapa
+├───────────────┼───────────────┼─────────────────────┼────────────────────────────────────────────┤
+│ DeepSeek      │ V3 / V4 Flash │ ✓                   │ Gü             │
+└───────────────┴───────────────┴─────────────────────┴────────────────────────────────────────────┘
+
+DeepL API karşılaştırmada yer alır ancak yüksek maliyetli olduğu için önerilmez.
+
+📁 Proje Yapısı
+
+GameLocalizationSystem/
+├── docs/                         ← Dokümantasyon (README,TRIBUTING, AI_API_COMPARISON, FILE_FORMATS,master_prompt.txt)
+└── src/
+    ├── LocalizePak.sln
+    ├── LocalizePak.Core/         ← Domain modelleri & arayüzleri
+    ├── LocalizePak.IO/           ← .pak/.locres I/O, şifreleme, sıkıştırma
+    ├── LocalizePak.Translation/  ← AI sağlayıcıları, mask
+    └── LocalizePak.UI/           ← Avalonia UI (MainWindow, ViewModeller, Settings, Glossary views)
+
+🔧 Teknoloji Yığını
+- DI / Commands: CommunityToolkit.Mvvm (IAsyncRelayCommand)
+- AI Entegrasyonları: Gemini, OpenAI, DeepSeek HTTP istemcileri (System.Net.Http)
+- Serileştirme / Sıkıştırma: System.IO.Compression (Zlib/Gzip), K4os.Compression.LZ4, ZstdSharp, Oodle (via P/Invoke, oo2core_9_win64.dll)
+- Şifreleme: AES‑256‑CBC (Pak footer’dan IV okunur)
+- Test: xUnit
+- Build: .NET 8 SDK
+- Dosya Formatları: .pak (UE4/UE5 versiyonları V1‑V11), .l, CityHash64/CRC32)
+
+📄 Geliştirme Günlüğü (DEVLOG_2026-08-19.md) Özeti
+
+19 Ağustos 2026 tarihli geliştirme günlüğüne göre:
+- İlk sürüm tamamlandı, build başarılı (0 hata, 1 uyarı)
+- Proje kararı: Sadece Unreal Engine değil, herhangi bir oyunun .pak dosyasını destekleyecek genel mimari
+- Teknoloji: C# .NET 8 + Avalonia UI (çapraz platform, MVVM)
+- AI motorları: Gemini Flash (ana), GPT-4o mini (yedek), DeepSeek (ekonomik)
+- docs/ klasörü ayrı dosyalara bölündü (README, ARCHITECTU
+- C# solution iskeleti oluşturuldu (Core, IO, Translation, UI katmanları + testler)
+- Özellikler: AES-256-CBC şifre çözme, Oodle helper, maskeleme mekanizması, AI sağlayıcıları, batch çeviri orchestratoru
+- Test sonuçları: 4/4 test başarılı
+- Tamamlanan geliştiriciler listesi çok uzun (izole çıktı motoru, WinUI 3/Fluent 2 tasarımı, Larian LSPak desteği, evrensel metin formatı adaptörü, glosary yönetimi, Claude API entegrasyonu, sürükle-bırak desteği, çeviri karşılaştırma penceresi, çoklu dil desteği, kanlı ilerleme istatistikleri, Akıllı API hata & 429 kota koruması, seçilenleri çevir motoru, hatalıları tekrar dene motoru, korumalı paketleme motoru, hata
+raporlama, evrensel çoklu oyun motoru desteği, Gemini mode & persona analizi, AI model tipi seçimi, Larian LSPak(dist/GLS/GLS.exe), kolay/ilişkin mod, akıllı AI AES asistanı, X-to-X özgürlüğü, Türkçe oyun yerelleştirme zekası, AI özgürlüğü, WinUI 3 Fluent 2 tasarımı
+
+🚀 Hızlı Başlangıç
+
+git clone https://github.com/kullanici/GameLocalizationSystem.git
+cd GameLocalizationSystem/src
+dotnet restore
+dotnet build
+dotnet run --project LocalizePak.UI
+
+▎ Gereksinim: .NET 8 SDK + Windows 10+/macOS 12+/Linux (Ubuntu 20.04+)
+
+Bu özet, projeyi kullanmak, katkıda bulunmak veya teknik detayları incelemek için iyi bir başlangıç noktası olabilir. Belirli bir bölgeyi
+(örneğin belirli bir sınıf, test veya özellik) daha derinlsadece söylemen yeterli! 😊
+
+✻ Sautéed for 20s
+
+LocalizePak.IO          ← .pak okuma/yazma, .locres binary ayrıştırma, AES deşifreleme, Oodle/LZ4/Zstd desteği
+        │
+LocalizePak.Core        ← Domain modelleri (PakArchive, PtionEntry vb.), arayüzler (ITranslationProvider,IPakReader, IPakWriter, ILocresSerializer), enumler ve AppSettings
+Her katman yalnızca daha düşük seviye katmanlara bağımlıdır; bu sayesinde test edilebilir ve değiştirilebilir.
+
+📋 İş Akışı (WORKFLOW.md)
+
+1. .pak Yükleme – Dosya seç → (şifreliyse) AES anahtarı gir → Aç
+2. .locres Seçme & Metin Ayrıştırma – Sol panelden .locres dosyası seç → sağ panelde DataGrid'e yükle
+3. Glosary & Direktif Tanımlama – Özel isimler (karakter, yer, silah) ve çeviri üslubu (ör. "orta çağ temalı, kasvetli")
+4. AI ile Çeviri Başlat – Ayarlardan AI servisi (Gemini/OpenAI/DeepSeek) seç → API anahtarı gir → "Çeviriyi Başlat"
+  - Rate‑limit → Exponential Backoff (2s, 4s, 8s…)
+  - Maskeleme: {0}, {PlayerName}, <tag> gibi değişkenler korunur, çeviri sonrası geri yüklenir
+
+5. Manuel Düzeltme & Onay – DataGrid hücresine tıklayıp düzenleme; hatalı/sonra yeniden çevirme işlemleri
+6. Yama Paketi Üret – "Dışa Aktar" → GameName‑Turkish_P.psörüne koy → oyun başlatıldığında Türkçe metin görünür
+
+▎ ⚠️ Orijinal oyun dosyaları asla değiştirilmez.
+
+🤖 Desteklenen AI Servisleri
+
+┌───────────────┬───────────────┬─────────────────────┬────────────────────────────────────────────┐
+│    Servis     │     Model     │ Bağlam Önbellekleme │                    Not                     │
+├───────────────┼───────────────┼─────────────────────┼────────────────────────────────────────────┤
+│ Google Gemini │ 2.5/3.5 Flash │   %75‑90 indirimli  │ Aek promptta) │
+├───────────────┼───────────────┼─────────────────────┼────────────────────────────────────────────┤
+│ OpenAI        │ GPT‑4o mini   │   %50 indirimli     │ Yedek motor                                │
+├───────────────┼───────────────┼─────────────────────┼───────────────┤
+│ DeepSeek      │ V3 / V4 Flash │ ✓                   │ Güçlü Türkçe, ekonomik                     │
+└───────────────┴───────────────┴─────────────────────┴────────────────────────────────────────────┘
+
+DeepL API karşılaştırmada yer alır ancak yüksek maliyetli
+
+📁 Proje Yapısı
+
+GameLocalizationSystem/
+├── docs/                         ← Dokümantasyon (README, ARCHITECTURE, WORKFLOW, CONTRIBUTING, AI_API_COMPARISON, FILE_FORMATS, master_prompt.txt)
+└── src/
+    ├── LocalizePak.sln
+    ├── LocalizePak.Core/         ← Domain modelleri & ar
+    ├── LocalizePak.IO/           ← .pak/.locres I/O, şifreleme, sıkıştırma
+    ├── LocalizePak.Translation/  ← AI sağlayıcıları, maskeleme, batch orchestrator
+    └── LocalizePak.UI/           ← Avalonia UI (MainWindlossary views)
+
+🔧 Teknoloji Yığını
+
+- UI: Avalonia + MVVM + CommunityToolkit.Mvvm
+- DI / Commands: CommunityToolkit.Mvvm (IAsyncRelayCommand)
+- AI Entegrasyonları: Gemini, OpenAI, DeepSeek HTTP istem
+- Serileştirme / Sıkıştırma: System.IO.Compression (Zlib/Gzip), K4os.Compression.LZ4, ZstdSharp, Oodle (via P/Invoke, oo2core_9_win64.dll)
+- Şifreleme: AES‑256‑CBC (Pak footer’dan IV okunur)
+- Test: xUnit
+- Build: .NET 8 SDK
+- Dosya Formatları: .pak (UE4/UE5 versiyonları V1‑V11), .locres (v1‑v3, UTF‑8/UTF‑16LE, CityHash64/CRC32)
+
+📄 Geliştirme Günlüğü (DEVLOG_2026-08-19.md) Özeti
+
+19 Ağustos 2026 tarihli geliştirme günlüğüne göre:
+- İlk sürüm tamamlandı, build başarılı (0 hata, 1 uyarı)
+- Proje kararı: Sadece Unreal Engine değil, herhangi bir oyunun .pak dosyasını destekleyecek genel mimari
+- Teknoloji: C# .NET 8 + Avalonia UI (çapraz platform, MV
+motorları: Gemini Flash (ana), GPT-4o mini (yedek), DeepSeek (ekonomik)
+- docs/ klasörü ayrı dosyalara bölündü (README, ARCHITECTURE, WORKFLOW, vb.)
+- C# solution iskeleti oluşturuldu (Core, IO, Translation, UI katmanları + testler)
+- Özellikler: AES-256-CBC şifre çözme, Oodle helper, maskeleme mekanizması, AI sağlayıcıları, batch çeviri orchestratoru
+- Test sonuçları: 4/4 test başarılı
+- Tamamlanan geliştiriciler listesi çok uzun (izole çıktı motoru, WinUI 3/Fluent 2 tasarımı, Larian LSPak desteği, evrensel metin formatı adaptörü, glosary yönetimi, Claude API entegrasyonu, sürükle-bırak desteği, çeviri karşılaştırma penceresi, çoklu dil desteği, kanlı ilerleme istatistikleri, Akıllı API hata & 429 kota koruması, seçilenleri çevir motoru, hatalıları tekrar dene motoru, korumalı paketleme motoru, hata raporlama, evrensel çoklu oyun motoru desteği, Gemini model kataloğu, dinamik karakter & persona analizi, AI model tipi seçimi, Larian LSPak başlık tamirleri, görsel paket durum kartı, bağımsız Tek Dosya dağıtım paketi, vb.)
+- Öğrenilenler: Evrensel .pak motoru, karakter & persona analizi, tüm modeller için açılır kutu, Larian LSPak desteği, uygulama dağıtımı (dist/GLS/GLS.exe), kolay/ilişkin mod, akıllı AI AES asistanı, X-to-X özgürlüğü, Türkçe oyun yerelleştirme zekası, AI özgürlüğü, WinUI 3 Fluent 2 tasarımı
+
+🚀 Hızlı Başlangıç
+
+git clone https://github.com/kullanici/GameLocalizationSystem.git
+cd GameLocalizationSystem/src
+dotnet restore
+dotnet build
+dotnet run --project LocalizePak.UI
+
+▎ Gereksinim: .NET 8 SDK + Windows 10+/macOS 12+/Linux (Ubuntu 20.04+)
+
+Bu özet, projeyi kullanmak, katkıda bulunmak veya teknik detayları incelemek için iyi bir başlangıç noktası olabilir. Belirli bir bölgeyi (örneğin belirli bir sınıf, test veya özellik) daha derinlemesine incelemek istersen, sadece söylemen yeterli! 😊
+
+✻ Cooked for 20s
+
+※ recap: We've reviewed the GameLocalizationSystem project, covering its purpose, architecture, workflow, AI integrations, and recent devlog. Let me know if you'd like to dive deeper into any specific area. (disable recaps in /config)
+
+> uygulamayı geliştirilebilecek yönü var mı diye araştır. ugı var mı araştır.
+
+  Thought for 1m 7s, searched for 3 patterns, read 3 files
+
+GameLocalizationSystem – Geliştirilebilecek Yönler, Eksikler ve Olası Hatalar
+
+Aşağıdaki gözlemler, kod incelemesi (尤其是 MainViewModel.cs, PakService.cs, BatchTranslationOrchestrator.cs ve diğer hizmet sınıfları) ve proje dokümantasyonuna dayanılarak Derlenmiştir. Her maddeyi “İyileştirme”, “Eksiklik” veya “Potansiyel Hata” olarak işaretledim; bazıları birbirini tamamlayabilir ve tek bir PR içinde birden çokiązım giderebilir.
+
+---
+🛠️ 1. Performans & Kaynak Yönetimi
+
+┌────────────────┬─────────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────┐
+│     Bölge      │                              Açıklama                               │                       Öneri                        │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ MainViewModel.CreateProvider() her çağ │ Tek bir, uygulama‑geniş HttpClient (veya           │
+ator   │ şekilde serbest bırakılmaz.                                         │ istemciyi kapatın; MainViewModel’de using veya     │
+│                │                                                                     │ finally bloğunda çağırın.                          │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ .pak çıkarma ve yazma sırasında tüm girişler belleğe                │ Girişleri akış tabanlı işleyin: her giriş okunur,  │
+│ Bellek baskısı │ (List<(string,byte[])>) alınır; büyük oyunlar (centaintes MB‑GB)    │ çevrilir ve hemen çıktı akışına yazılır; bu sayede │
+│                │ için bu durum bellek tüketimini artırabilir.                        │  sadece bir giriş bellekte tutulur.                │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ PakService.WriteAsync her zaman CompressZlib kullanır; orijinal     │ giriş PakEntry.Compression bilgisini koruyarak     │
+│ Zlib zorunlu   │ paketinin sıkıştırma yöntemi (LZ4, Zstd, Oodle vb.) kaybolur. Çoğu  │ uygun sıkıştırıcıyı seçin; yoksa orijinal yöntemi  │
+│ sıkıştırma     │ motor bu sıkılamayla çalışır ama bazı özel yapılar (ör. konsol      │ tercih edin.                                       │
+│                │ portları) hassas olabilir.                                          │                                                    │
+├────────────────┼─────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│                │ HeuristicScanAsync sadece ilk 16 MB’i tarar; büyük paklerde yerini  │ Tarama boyunu yapılandırılabilir yapın (veya tüm   │
+│ Heuristic      │ geçen .locres/XML blokları kaçırılabilir. Ayrıca yanlıs pozitifler  │ dosyayı akışla tarayın) ve bulunan blokların       │
+│ tarama         │ (ör. rastgele binary veri) üretebilir.                              │ geçerli bir başlık/son 발표 kontrolü ekleyin       │
+│                │                                        │ (Locres magic, XML declara‑tıon vb.).              │
+└────────────────┴─────────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────┘
+
+---
+🧩 2. Çeviri İş Akışı & Kalite Kontrolü
+
+i (TM)   │ gönderilir → maliyet ve süre artar.               │ göndermeyin.                                                        │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ İzin verilen     │ Şu anda sadece Kaynak ve Hedef dil seçimi var;    │ “Tüm dilleri tara” modu ekleyin, her girişin kaynak dilini otomatik │
+│ diller / kýllar  │ bir paketteki birden fazla dil (ör. kongre        │  algılayın (langdetect‑benzeri kütüphane) ve aynı hedef dile        │
+│                  │ metinleri, alt‑yazı dosyaları) desteklenmiyor.    │ çevirin.                                                            │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Değişken /       │ UI’da HasError ve OverflowRisk bayrakları var ama │ Otomatik “variable‑repair” komutu: çeviride eksik veya fazlal {0},  │
+│ etiket           │  otomatik düzeltme yok. Kullanıcı her hatalı      │ {PlayerName}, <tag> vb. bulunursa uyarı ver ve bir düğmeyle         │
+│ doğrulaması      │ satırı elle düzeltermelidir.                      │ orijinal değerleri yeniden ekleyin. Eğer uzunluk %40’ı aşarsa öneri │
+│                  │                                                   │  olarak kısaltma veya эр‑ellipsis ekleyin.                          │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Çeviri kalitesi  │ Şu anda sadece tamamlandı/hata sayısı             │ İsteğe bağlı olarak çeviriyi aynı model üzerinden                   │
+│ skorlaması       │ gösteriliyor; çevirin vocabulary/fluency gibi     │ “back‑translation” yapıp orijiniale benzerlik skorunu gösterin,     │
+│                  │ niteliksel ölçümler yok.                          │ veya LanguageTool benzeri bir dil‑kontrolü entegre edin.            │
+├──────────────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Batch            │ RetryErrorsAsync sadece Status == Erdan ayrıntılı hata kodu (HttpStatusCode,               │
+─────────┼───────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Plural /         │ .locres formatı tekil/çoğul ayrımı desteklemez;   │ Gelişmiş bir “Plural Handler” eklensin: kullanıcı “{0} item → {0}   │
+│ çillişkel        │ bazı oyunlar (özellikle RPG) meta‑veriYLE sayısal │ öğe / {0} öğeler” gibi kalıplarını tanımlasın, orchestrator bu      │
+│                  │  biçimler kullanır.                               │ kalıplara göre çeviriyi bölüp birlikte birleştirsin.                │
+└──────────────────┴───────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────┘
+
+---
+🎨 3. Kullanıcı Arayüzü & Kullanılabilirlik
+
+┌───────────────────┬──────────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────┐
+│       Bölge       │                 Açıklama                 │                                    Öneri                                    │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│                   │ Şu anda sadece koyu (WinUI Fluent 2)     │ Settings‑e “Tema: Açık / Koyu / Sistem” seçeneği ekleyin; App.xaml içinde   │
+│ Tema değiştirme   │ tema var; açık tema veya sistem‑temayı   │ tema kaynaklarını dinamik olarak değiştirin.                                │
+│                   │ takip etme seçeneği yok.                 │                                                                             │
+├───────────────────┼───────────────────────────────────────────────────────────────────────────────────────────┤
+│ Çalışma alanı     │ Kullanıcı her seferinde paket, glosary,  │ Son kullanılan paket yolu, açık lokalizasyon dosyası, glosary veAI model    │
+│ kaydı             │ ayarları elle yüklemelidir.              │ ayarlarını %APPDATA%\GameLocalizationSystem\workspace.json gibi bir dosyaya │
+│                   │                                    a otomatik yükleyin.                                   │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ Glossary satır    │ Glossary penceresi ayrı bir pencereelinde bir “Glossary” sekmesi ekleyin veya mevcut      │
+│ içi düzenleme     │ veri‑grid içinde doğrudan düzenleme      │ DataGrid’e ek bir kolon (“Override”) ekleyin; değişiklikler GlossaryList’e  │
+│                   │ olsaydı akış daha hızlı olur.            │ yansısın ve anlık olarak çeviride etkili olsun.                             │
+├───────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ İlerleme          │ Tek bir anlık durum çubuğu var; daha     │ “Log” sekmesi (virtualized ListView) ekleyin ve orchestrator’dan            │
+│ penceresi ayrı    │ ayrıntılı log (hangi batch’de,哪些 token │ IProgress<LogMessage> üzerinden mesaj alın; bu sayede kullanıcı consol gibi │
+│ ayrı              │  tüketildi, önbellek vuruş oranı vbr.                                                     │
+──────────┼──────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+│                   │ UI’da çoğu eylem fare‑tıkla; sık         │ MainViewModel’de InputBindings (Avalonia) üzerinden <kbd>F5</kbd> = Başlat, │
+│ Klavye            │ kullanılanlar (“Çeviriyi Başlat”,        │  <kbd>Ctrl+R</kbd> = Hata Yeniden Deneme, <kbd>Ctrl+E</kbd> = Çıktı Klasörü │
+│ kısayolları       │ “Hatalıları Yeniden Dene”, “Çıktı        │  gibi bağlamalar ekleyin.                                                   │
+│                   │ Klasörünü Aç”) için kısayol yok.         │                                                                             │
+└───────────────────┴──────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────┘
+
+---
+📦 4. Paket & Yama İşlevleri
+
+Bölge: Şifrelı paket koruma
+Açıklama: WriteAsync her zaman şifresiz paket üretir; kullanıcı orijinal şifreli paket üzerine aynı şifreleyle yama yapmak isteyebilir (özellikle
+anti‑cheat sistemleri şifreyi zorunlu kılar).
+Öneri: WriteAsync’e bir preserveEncryption: bool parametresi ekleyin; true ise orijinal PakFooter.IsEncrypted ve AES IV’i kopyalanır ve sadece
+.locres bloğu şifresiz yazılır (VEYA aynı anahtar ile yen
+────────────────────────────────────────
+Bölge: Yama paketi compression seçimi
+Açıklama: Şu anda yama paketi daima Zlib ile sıkıştırılır; orijinal paket LZ4/Zstd kullanıyorsa yama dosyası boyutu gereksiz olarak büyür.
+Öneri: Orijinal paket comp.method’sını PakArchive.Compression (veya ilk girişten) okuyup aynı yöntemi kullanın.
+────────────────────────────────────────
+Bölge: Çıktı klasörü isimlendirme
+a paketi simülasyonu
+Açıklama: Kullanıcı ürettiği yama paketini oyuna atmadan test edemez; yanlış bir yama oyun çökesine yol açabilir.
+Öneri: “Test Başlat” butonu: yama paketini geçici bir klasöre çıkarıp, oyun yürütülebilirini (eğer yol biliniyorsa) geçici -mod ya da -pak
+argümanıyla çalıştırın; çıkış kodu ve logları yakalayın.
+────────────────────────────────────────
+Bölge: Paket içeriği görsel öni̇zi
+Açıklama: Kullanıcı paketteki dosyaları isimlerdenだけ görür; içerik (örnek bir görsel, ses, model) hakkında bilgi yoktur.
+Öneri: Paketteki varlıklardan bir ön‑izleme penceresi (ör. resim için thumbnail, model için wireframe, ses için waveform) ekleyin – bu özellikle
+“wrong asset type” hatalarını önler.
+
+---
+🔧 5. Güvenlik & Yapılandırma
+
+┌─────────────────────┬────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────┐
+│        Bölge        │                      Açıklama                      │                             Öneri                              │
+├─────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┤
+│ API anahtarı        │ Anahtarlar pezelleşmiş JSON (settings.json) içinde │ Windows Credential Manager (veya macOS Keychain, Linux Secret  │
+│ saklama             │  düz metin olarak tutulur; başka bir uygulama veya │ Service) üzerinden anahtarları depolayın; uygulama başlarken   │
+│                     │  kötü niyetli bir eklenti bu dosyayı okuyabilir.   │ burada çekip, bellekte sadece kısa süreli tutun.               │
+├─────────────────────┼────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Proxy / yönlendirme │ Kurumsal ortamlarda kullanıcılar e proxy adresi, port, kullanıcı adı/şifre alanları    │
+man aşımı   │ 120 s sabit zaman aşımı; bazı modeller (özellikle  │ Zaman aşımını ayarlanabilir (default 120 s) yapın; Polly       │
+│ ve yeniden deneme   │ uzun bağlamlı) daha çok zaman ihtiyaç duyabilir,   │ kullanarak 429 dışındaki kısa süreli ağ hataları için de       │
+│ 정치ке              │ natomiast kısa isteklerde gereksiz bekleme oluşur. │ azaltılmış bekleme süresi ile yeniden deneme ekleyin.          │
+├─────────────────────┼────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ Ücretsiz kota       │ Gemini Free Tier 500 istek/günü gibi sınırlar      │ Her API çağrısından sonra dönen header‑lar (örn.               │
+│ uyarısı             │ uygulamada gösterilmiyor; kullanıcı aniden kotayi  │ x‑ratelimit‑remaining) okuyup, kalan istek sayısını UI’da      │
+│                     │ tükettiğinde çeviri durur, nedeni açıklanmaz.      │ gösterin; eşik (örn. %10) altına indiğinde uyarı verin.        │
+└─────────────────────┴────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────┘
+
+---
+📈 6. Test, CI & Geliştirici Deneyimi
+
+┌────────────────┬─────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────┐
+│     Bölge      │                      Açıklama                       │                               Öneri                                │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Birim test     │ Şu anda yalnızca 4 test var (OutputManin farklı paket versiyonları (V1‑V11, LSPak, ZIP,     │
+│ kapsamı        │ MaskingEngine, Xml/Json parser, Glossary CSV). Core │ Classic) ve korrupt veri senaryoları için xUnit testleri yazın;    │
+│                │  ve IO paketleri için çok az test.                  │ Test veri paketlerini tests/TestData/ klasörüne ekleyin.           │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Entegrasyon    │ Gerçek bir oyunun .pak dosyası üzerinden            │ basit bir test paketi (birkaç .locres girişi olan minimal unreal   │
+│ testleri       │ çeviri‑yama akışı end‑to‑end test edilmiyor.        │ pak) oluşturup, CI içinde tüm akışı yürütüp MD5/byte‑by‑byte       │
+│                │                                                     │ karşılaştırma yapın.                                               │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Ön‑commit      │ Kod formatı (dotnet format) ve analiz (dotnet       │ pre‑commit hook (husky/lefthook) ekleyerek her commit’te format ve │
+│ hook’ları      │ analyzers) elle çalıştırılıyor; gözden kaçabilecek  │  analiz otomatik çalıştırılsın.                                    │
+│                │ stil hataları olabilir.                             │                                                                    │
+├────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
+│ Yayın          │ Bağımsız dağıtım (dist/GLS/GLS.exe) var ama         │ CI içinde dotnet publish -r win-x64 -c Release --self-contained    │
+│ (publish)      │ otomatik release pipeline (GitHub Actions) yok.     │ true adımı ekleyip, artefakt olarak Artifact upload yapın; aynı    │
+│ süreci         │                                        ve Linux için de cross‑publish yapın.                │
+└────────────────┴─────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
+
+---
+📌 Özet & Öncelikli Yapılması Gerekenler
+
+┌─────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Öncelik │                         Eylem                          │                              Beklenen Etki                              │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 1       │ HttpClient yaşam döngüsünü düzeltmek (tekton rtadan kalkar, performans artar, bağlantı hataları     │
+│         │ factory)                                               │ azaltılır                                                               │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 2       │ Çeviri belleği (TM) eklemek                            │ Tekrarlanan maliyet %30‑%70 azalır (özellikle büyük oyunlar için)├─────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 3       │ Türkçe karakter / değişken doğrulama ve otomatik       │ Kullanıcı el‑işini azaltır, oyun içinde eksik değişken hatası önlenir   │
+│         │ onarım                                                 │                                                                         │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 4       │ Tema, çalışma alanı kaydetme ve kısayollar             │ Günlük kullanıcı akışı daha akıcı, yeniden çalıştırmada aynı ayarlar    │
+│         │                                                        │ korunur                                                                 │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 5       │ Şifreli paketleri koruyan yama paketi seçeneği         │ Anti‑cheat korumalı oyunlar için uygulama kullanılabilir hale gelir     │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 6       │ Güvenli API anahtarı depolama (Credential Manager)     │ Sistem güvenliği artar, anahtar izi sızdırmaz                           │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 7       │ Test paketlerini artırıp CI’ye entegrasyon testleri    │ Gelecek değişikliklerde geriye dönük uyumluluk garantisi altına a│         │ eklemek                                                                                             │
+├─────────┼────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ 8       │ Akıllı filtre / namespace‑seçim kutusu                 │ Kullanıcı ilgilendiği bölümü hızlıca bulur, veri çakışma riski azalır   │
+└─────────┴────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+
+Bu önerileri projenin yol haritasında kısa‑orta‑uzun vadeli olarak planlayıp, her birini ayrı bir feature dalı veyaissue olarak takip edebilirsiniz. Her maddeyi tek başına deneyip, gerekirse ya yeni TM modü) yaparak katkı ölçebileceğinizi unutmayın.
+
+Eğer belirli bir alandaki kod parçacığını daha derinlemesine incelemek ya da bir prototip yapmak istersen, sadece söylemen yeterli – ilgili sınıfı ya da metodu paylaşabilir ve birlikte inceleme yap

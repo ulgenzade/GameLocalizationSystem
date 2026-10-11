@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        x:Class="LocalizePak.UI.Views.DiffInspectorWindow"
+        x:DataType="vm:LocalizationEntryViewModel"
+        Title="Çeviri İnceleme &amp; UI Taşma Analizi — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="820" Height="640"
+        MinWidth="640" MinHeight="480"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="24">
+
+        <!-- Başlık ve Durum Kartı -->
+        <Border Grid.Row="0" Classes="card" Margin="0,0,0,16">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Classes="subtitle" Text="🔍 Metin &amp; Diff Önizleme"/>
+                        <Border Background="{Binding StatusColor}" CornerRadius="12" Padding="10,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding StatusLabel}" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Classes="caption" Text="{Binding Key, StringFormat='Anahtar: {0}'}"/>
+                </StackPanel>
+
+                <!-- UI Taşma ve Karakter Analiz Kartı -->
+                <Border Grid.Column="1" Background="#262626" CornerRadius="8" Padding="12,6" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1">
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="caption" Text="Metin Boyutu Değişimi" FontWeight="SemiBold"/>
+                        <TextBlock Classes="body" Text="{Binding LengthInfo}" FontWeight="Bold"
+                                   Foreground="{Binding OverflowColor}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Yan Yana Karşılaştırma Panelleri (Split View) -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,16,*">
+
+            <!-- Sol: Orijinal Metin -->
+            <Border Grid.Column="0" Classes="card">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                        <TextBlock Classes="heading" Text="📄 Orijinal Kaynak Metin"/>
+                        <TextBlock Grid.Column="1" Classes="caption" Text="{Binding SourceText.Length, StringFormat='{}{0} karakter'}"/>
+                    </Grid>
+                    <TextBox Grid.Row="1"
+                             Text="{Binding SourceText}"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             FontFamily="Cascadia Code, Consolas, Courier New"
+                             FontSize="13"
+                             Background="#1A1A1A"/>
+                </Grid>
+            </Border>
+
+            <!-- Sağ: Çeviri Metni (Düzenlenebilir) -->
+            <Border Grid.Column="2" Classes="card">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                        <TextBlock Classes="heading" Text="✍️ Hedef Çeviri (Düzenlenebilir)"/>
+                        <TextBlock Grid.Column="1" Classes="caption" Text="{Binding TranslatedText.Length, StringFormat='{}{0} karakter'}"/>
+                    </Grid>
+                    <TextBox Grid.Row="1"
+                             Text="{Binding TranslatedText}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             FontFamily="Cascadia Code, Consolas, Courier New"
+                             FontSize="13"
+                             Background="#1A1A1A"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Alt Not & Kapat Çubuğu -->
+        <Border Grid.Row="2" Margin="0,16,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Classes="caption" Text="💡 Çeviri metninde yaptığınız düzenlemeler ana tabloya anında yansır."/>
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="Kapat"
+                        Classes="accent"
+                        Padding="24,8"
+                        Click="OnCloseClick"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

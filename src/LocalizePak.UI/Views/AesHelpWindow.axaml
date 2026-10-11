@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LocalizePak.UI.Views.AesHelpWindow"
+        Title="AES Anahtarı Nedir ve Nereden Bulunur? — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="700" Height="620"
+        MinWidth="560" MinHeight="480"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="24">
+
+        <ScrollViewer Grid.Row="0">
+            <StackPanel Spacing="16">
+
+                <!-- Başlık -->
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="subtitle" Text="🔑 AES-256 Şifreli .pak Dosyaları ve Anahtar Rehberi"/>
+                    <TextBlock Classes="caption"
+                               Text="Bazı oyun geliştiricileri .pak dosyalarını AES-256 ile şifreler. Bu rehber anahtarı nasıl bulabileceğinizi açıklar."/>
+                </StackPanel>
+
+                <!-- 1. AI Neden Şifreyi Çözemez? -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="❓" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Classes="heading" Text="Yapay Zeka (AI) AES Şifresini Kendi Başına Çözebilir mi?" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Classes="body" TextWrapping="Wrap"
+                                   Text="Hayır. AES-256, askeri düzeyde bir şifreleme standardıdır ve 2^256 (milyarlarca katrilyon) farklı kombinasyona sahiptir. Dünyadaki tüm süper bilgisayarlar veya yapay zekalar bir araya gelse dahi kaba kuvvetle (brute force) bu şifreyi matematiksel olarak tahmin edemez."/>
+                        <TextBlock Classes="caption" Foreground="{DynamicResource AccentHoverBrush}" TextWrapping="Wrap"
+                                   Text="💡 Çözüm: Şifre tahmin edilmez; oyunun kendi çalışabilir dosyasından (.exe veya RAM) okunur ya da topluluk listelerinden alınır."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. Nereden Bulunur? (Hazır Topluluk Veritabanları) -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🌐" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Classes="heading" Text="1. Yöntem: Hazır Topluluk Listelerinden Almak (En Kolayı)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Classes="body" TextWrapping="Wrap"
+                                   Text="Oyun modlama topluluğu neredeyse tüm popüler oyunların AES anahtarlarını anında paylaşır:"/>
+                        <TextBlock Classes="caption" Text="• CS.RIN.RU Forumu (Unreal Engine Games AES Keys arşivi)" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Classes="caption" Text="• FModel ve Gildor's UModel AES Database" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Classes="caption" Text="• ZenHax / Modding Discord sunucuları" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <Border Background="#1AFFFFFF" CornerRadius="4" Padding="10,6" Margin="0,4,0,0">
+                            <TextBlock Classes="caption" FontFamily="Consolas, monospace"
+                                       Text="Örnek Format: 0x4B7C91E52A89F0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01 (64 Karakter Hex)"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. Bellek Taraması (Memory Dump) Yöntemi -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🛠️" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Classes="heading" Text="2. Yöntem: Oyunun RAM / Belleğinden Çıkarmak (İleri Düzey)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Classes="body" TextWrapping="Wrap"
+                                   Text="Oyun çalışırken şifreyi çözmek için anahtarı RAM'e yüklemek zorundadır:"/>
+                        <TextBlock Classes="caption" Text="1. Oyunu başlatın ve ana menüye gelin."/>
+                        <TextBlock Classes="caption" Text="2. x64dbg, Cheat Engine veya UUU (Universal Unreal Unlocker) ile oyun sürecine bağlanın."/>
+                        <TextBlock Classes="caption" Text="3. FEncryptionKey yapısını veya 256-bit anahtar dizilimini taratarak 64 karakterlik hex kodunu kopyalayın."/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Alt Kapat Butonu -->
+        <Border Grid.Row="1" Margin="0,14,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0">
+            <Button Content="Anladım, Kapat"
+                    Classes="accent"
+                    HorizontalAlignment="Right"
+                    Padding="24,8"
+                    Click="OnCloseClick"/>
+        </Border>
+
+    </Grid>
+</Window>

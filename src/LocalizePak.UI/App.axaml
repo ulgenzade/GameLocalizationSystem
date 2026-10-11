@@ -1,0 +1,72 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LocalizePak.UI.App"
+             xmlns:local="using:LocalizePak.UI"
+             RequestedThemeVariant="Dark">
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://GLS/Styles/AppStyles.axaml"/>
+    </Application.Styles>
+
+    <Application.Resources>
+        <!-- Windows 11 / WinUI 3 Renk Paleti & Tasarım Belirteçleri -->
+        <Color x:Key="SystemAccentColor">#60CDFF</Color>
+        <Color x:Key="SystemAccentColorDark1">#0078D4</Color>
+        <Color x:Key="SystemAccentColorDark2">#005FB8</Color>
+        <Color x:Key="SystemAccentColorLight1">#99EBFF</Color>
+
+        <!-- Arka Plan & Yüzey (Mica & Acrylic Katmanları) -->
+        <Color x:Key="SolidBackgroundFillColorBase">#202020</Color>
+        <Color x:Key="SolidBackgroundFillColorSecondary">#1C1C1C</Color>
+        <Color x:Key="LayerFillColorDefault">#262626</Color>
+        <Color x:Key="LayerFillColorAlt">#2D2D2D</Color>
+        <Color x:Key="CardBackgroundFillColorDefault">#2D2D2D</Color>
+        <Color x:Key="CardBackgroundFillColorSecondary">#323232</Color>
+        <Color x:Key="SubtleFillColorSecondary">#14FFFFFF</Color>
+
+        <!-- Çerçeveler & Stroke -->
+        <Color x:Key="CardStrokeColorDefault">#1AFFFFFF</Color>
+        <Color x:Key="ControlStrokeColorDefault">#1EFFFFFF</Color>
+        <Color x:Key="DividerStrokeColorDefault">#15FFFFFF</Color>
+
+        <!-- Tipografi & Metin -->
+        <Color x:Key="TextFillColorPrimary">#FFFFFF</Color>
+        <Color x:Key="TextFillColorSecondary">#CFCFCF</Color>
+        <Color x:Key="TextFillColorTertiary">#8A8A8A</Color>
+        <Color x:Key="TextFillColorDisabled">#5C5C5C</Color>
+
+        <!-- Durum Renkleri (WinUI 3 InfoBar / Badges) -->
+        <Color x:Key="SystemFillColorSuccess">#6CCB5F</Color>
+        <Color x:Key="SystemFillColorSuccessBackground">#19391D</Color>
+        <Color x:Key="SystemFillColorCritical">#FF99A4</Color>
+        <Color x:Key="SystemFillColorCriticalBackground">#441A1E</Color>
+        <Color x:Key="SystemFillColorCaution">#FCE100</Color>
+        <Color x:Key="SystemFillColorCautionBackground">#3D350A</Color>
+        <Color x:Key="SystemFillColorAttention">#60CDFF</Color>
+        <Color x:Key="SystemFillColorAttentionBackground">#0B2B47</Color>
+
+        <!-- SolidColorBrush Tanımları -->
+        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource SystemAccentColorDark1}"/>
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource SystemAccentColor}"/>
+        <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource SystemAccentColorDark2}"/>
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource SolidBackgroundFillColorBase}"/>
+        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource SolidBackgroundFillColorSecondary}"/>
+        <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardBackgroundFillColorDefault}"/>
+        <SolidColorBrush x:Key="CardStrokeBrush" Color="{StaticResource CardStrokeColorDefault}"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextFillColorPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextFillColorSecondary}"/>
+        <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextFillColorTertiary}"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SystemFillColorSuccess}"/>
+        <SolidColorBrush x:Key="SuccessBgBrush" Color="{StaticResource SystemFillColorSuccessBackground}"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource SystemFillColorCritical}"/>
+        <SolidColorBrush x:Key="ErrorBgBrush" Color="{StaticResource SystemFillColorCriticalBackground}"/>
+        <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource SystemFillColorCaution}"/>
+        <SolidColorBrush x:Key="WarningBgBrush" Color="{StaticResource SystemFillColorCautionBackground}"/>
+        <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerStrokeColorDefault}"/>
+    </Application.Resources>
+</Application>

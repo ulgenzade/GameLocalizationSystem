@@ -1,0 +1,215 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using LocalizePak.Core.Interfaces;
+using LocalizePak.Core.Models;
+
+namespace LocalizePak.Translation.Providers;
+
+/// <summary>
+/// Google Gemini Flash API entegrasyonu.
+/// Batch çevirisi için JSON formatını kullanır.
+/// </summary>
+public sealed class GeminiTranslationProvider : ITranslationProvider
+{
+    private readonly HttpClient _http;
+    private string _apiKey = string.Empty;
+    private string _model = "gemini-3.8-flash";
+
+    public string Name => "Gemini";
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey);
+
+    public GeminiTranslationProvider(HttpClient httpClient)
+    {
+        _http = httpClient;
+    }
+
+    public void Configure(string apiKey, string model = "gemini-3.8-flash")
+    {
+        _apiKey = apiKey;
+        _model = string.IsNullOrWhiteSpace(model) ? "gemini-3.8-flash" : model;
+    }
+
+    public async Task<IReadOnlyList<string>> TranslateBatchAsync(
+        IReadOnlyList<string> maskedTexts,
+        TranslationContext context,
+        CancellationToken ct = default)
+    {
+        if (!IsConfigured)
+            throw new InvalidOperationException("Gemini API anahtarı yapılandırılmamış.");
+
+        var systemInstruction = BuildSystemInstruction(context);
+        var userPrompt = BuildUserPrompt(maskedTexts);
+
+        var genConfig = new JsonObject
+        {
+            ["temperature"] = 0.2,
+            ["maxOutputTokens"] = 8192,
+            ["responseMimeType"] = "application/json"
+        };
+
+        var effort = context.NormalizedReasoningEffort;
+        if (effort is "low" or "medium" or "high")
+        {
+            int budget = effort switch
+            {
+                "low" => 1024,
+                "medium" => 2048,
+                "high" => 4096,
+                _ => 1024
+            };
+            genConfig["thinkingConfig"] = new JsonObject
+            {
+                ["thinkingBudget"] = budget
+            };
+        }
+        else
+        {
+            genConfig["thinkingConfig"] = new JsonObject
+            {
+                ["thinkingBudget"] = 0
+            };
+        }
+
+        var requestBody = new JsonObject
+        {
+            ["system_instruction"] = new JsonObject
+            {
+                ["parts"] = new JsonArray
+                {
+                    new JsonObject { ["text"] = systemInstruction }
+                }
+            },
+            ["contents"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["parts"] = new JsonArray
+                    {
+                        new JsonObject { ["text"] = userPrompt }
+                    }
+                }
+            },
+            ["generationConfig"] = genConfig,
+            ["safetySettings"] = new JsonArray
+            {
+                new JsonObject { ["category"] = "HARM_CATEGORY_HARASSMENT", ["threshold"] = "BLOCK_NONE" },
+                new JsonObject { ["category"] = "HARM_CATEGORY_HATE_SPEECH", ["threshold"] = "BLOCK_NONE" },
+                new JsonObject { ["category"] = "HARM_CATEGORY_SEXUALLY_EXPLICIT", ["threshold"] = "BLOCK_NONE" },
+                new JsonObject { ["category"] = "HARM_CATEGORY_DANGEROUS_CONTENT", ["threshold"] = "BLOCK_NONE" },
+                new JsonObject { ["category"] = "HARM_CATEGORY_CIVIC_INTEGRITY", ["threshold"] = "BLOCK_NONE" }
+            }
+        };
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Add("x-goog-api-key", _apiKey);
+        request.Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json");
+
+        using var response = await _http.SendAsync(request, ct);
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests || responseBody.Contains("RESOURCE_EXHAUSTED"))
+            {
+                throw new HttpRequestException(
+                    "⚠️ Gemini API Kotası Doldu (429 - Günlük İstek Sınırı / Rate Limit). Lütfen Ayarlar'dan modeli değiştirin (örn. gemini-2.0-flash), yeni bir API anahtarı ekleyin veya DeepSeek / Claude / Ollama kullanın.",
+                    null,
+                    System.Net.HttpStatusCode.TooManyRequests);
+            }
+
+            var safeErrorMessage = responseBody.Replace(_apiKey, "***");
+            throw new HttpRequestException($"Gemini API hatası ({response.StatusCode}): {safeErrorMessage}", null, response.StatusCode);
+        }
+
+        return ParseResponse(responseBody, maskedTexts.Count);
+    }
+
+    private static string BuildSystemInstruction(TranslationContext ctx)
+    {
+        var sb = new StringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(ctx.SystemPromptTemplate))
+        {
+            sb.AppendLine(ctx.SystemPromptTemplate);
+        }
+        else
+        {
+            sb.AppendLine("Sen profesyonel bir video oyunu yerelleştirme uzmanısın.");
+            sb.AppendLine($"Görevin: Oyun metinlerini İngilizce'den {ctx.TargetLanguageName}'ye en doğal ve kaliteli şekilde çevirmek.");
+            sb.AppendLine();
+            sb.AppendLine("MUTLAK KURALLAR:");
+            sb.AppendLine("1. [VAR_X], [POS_X], [FMT_X], [ESC_X], [TAG_X], [ETAG_X], [TMPTAG_X], [NAME_X] etiketlerini HİÇBİR ZAMAN çevirme, silme veya sırasını bozma.");
+            sb.AppendLine("2. Bu etiketleri tam olarak aynı şekilde, değiştirmeden çeviride koru.");
+            sb.AppendLine("3. Başlıklarda, diyaloglarda ve '*' ile başlayan anlatıcı aksiyonlarında metinleri Türkçeye çevir.");
+            sb.AppendLine("4. Yanıtını SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]");
+        }
+
+        if (!string.IsNullOrWhiteSpace(ctx.UserDirective))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"ÖZEL OYUN DİREKTİFİ:\n{ctx.UserDirective}");
+        }
+
+        if (ctx.Glossary.Any())
+        {
+            sb.AppendLine();
+            sb.AppendLine("ÇEVİRİLMEYECEK VEYA ÖZEL ÇEVİRİSİ OLAN İSİMLER:");
+            foreach (var entry in ctx.Glossary)
+                sb.AppendLine($"  - {entry}");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string BuildUserPrompt(IReadOnlyList<string> texts)
+    {
+        var items = texts.Select((t, i) => new JsonObject { ["id"] = i, ["text"] = t });
+        var arr = new JsonArray(items.Select(o => (JsonNode)o).ToArray());
+        return $"Aşağıdaki oyun metinlerini çevir ve aynı sırada JSON dizisi olarak döndür:\n{arr.ToJsonString()}";
+    }
+
+    private static IReadOnlyList<string> ParseResponse(string responseBody, int expectedCount)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("candidates", out var candidates) &&
+                candidates.GetArrayLength() > 0)
+            {
+                var candidate = candidates[0];
+
+                if (candidate.TryGetProperty("finishReason", out var finishReason))
+                {
+                    var reason = finishReason.GetString();
+                    if (reason == "SAFETY")
+                    {
+                        throw new HttpRequestException("Gemini güvenlik filtresi (Safety Filter) bu metin grubunun çevrilmesini engelledi.");
+                    }
+                }
+
+                if (candidate.TryGetProperty("content", out var content) &&
+                    content.TryGetProperty("parts", out var parts) &&
+                    parts.GetArrayLength() > 0 &&
+                    parts[0].TryGetProperty("text", out var textProp))
+                {
+                    var rawText = textProp.GetString() ?? string.Empty;
+                    return JsonTranslationParser.Parse(rawText, expectedCount);
+                }
+            }
+
+            return JsonTranslationParser.Parse(responseBody, expectedCount);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch
+        {
+            return JsonTranslationParser.Parse(responseBody, expectedCount);
+        }
+    }
+}

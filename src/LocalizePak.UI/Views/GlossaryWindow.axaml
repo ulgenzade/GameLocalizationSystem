@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:models="using:LocalizePak.Core.Models"
+        x:Class="LocalizePak.UI.Views.GlossaryWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Glosary &amp; Özel Terimler Sözlüğü — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="780" Height="560"
+        MinWidth="600" MinHeight="400"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20">
+
+        <!-- ─── 1. BAŞLIK & AÇIKLAMA ─── -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Classes="subtitle" Text="📚 Özel İsimler &amp; Terimler Sözlüğü (Glossary)"/>
+            <TextBlock Classes="caption"
+                       Text="Çeviride korunmasını istediğiniz oyun içi karakter adları, eşyalar veya zorunlu Türkçe karşılıkları buradan yönetebilirsiniz."/>
+        </StackPanel>
+
+        <!-- ─── 2. TERİM LİSTESİ DATAGRID ─── -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*">
+            <!-- Hızlı Aksiyon Çubuğu -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,0,0,8">
+                <Button Grid.Column="0" Content="➕  Yeni Terim Ekle" Classes="accent" Click="OnAddEntryClick" Margin="0,0,6,0"/>
+                <Button Grid.Column="1" Content="🗑️  Seçileni Sil" Classes="danger" Click="OnDeleteEntryClick" Margin="0,0,6,0"/>
+
+                <Button Grid.Column="3" Content="📥  CSV Yükle" Classes="secondary" Click="OnImportCsvClick" Margin="0,0,6,0"/>
+                <Button Grid.Column="4" Content="📤  CSV Olarak Kaydet" Classes="secondary" Click="OnExportCsvClick"/>
+            </Grid>
+
+            <!-- Glosary Tablosu -->
+            <DataGrid Grid.Row="1"
+                      x:Name="GlossaryGrid"
+                      ItemsSource="{Binding GlossaryList}"
+                      Background="#1F1F1F"
+                      RowBackground="#1F1F1F"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{DynamicResource CardStrokeBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      IsReadOnly="False"
+                      AutoGenerateColumns="False"
+                      SelectionMode="Single">
+                <DataGrid.Columns>
+                    <!-- Orijinal Metin -->
+                    <DataGridTextColumn Header="Orijinal Terim / İsim"
+                                        Binding="{Binding Original}"
+                                        Width="*"
+                                        FontSize="13"/>
+
+                    <!-- Hedef Çeviri -->
+                    <DataGridTextColumn Header="Hedef Çeviri Karşılığı (Opsiyonel)"
+                                        Binding="{Binding Translation}"
+                                        Width="*"
+                                        FontSize="13"/>
+
+                    <!-- Asla Çevrilmesin CheckBox -->
+                    <DataGridCheckBoxColumn Header="Asla Çevrilmesin"
+                                            Binding="{Binding DoNotTranslate}"
+                                            Width="140"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- ─── 3. ALT AKSİYONLAR ─── -->
+        <Border Grid.Row="2" Margin="0,14,0,0" Padding="0,8,0,0"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Classes="caption" VerticalAlignment="Center"
+                           Text="{Binding GlossaryList.Count, StringFormat='Toplam {0} özel terim kayıtlı.'}"/>
+                <Button Grid.Column="1" Content="✅  Kaydet ve Kapat" Classes="accent" Padding="20,8" Click="OnSaveAndCloseClick"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LocalizePak.UI.Views.AboutWindow"
+        Title="Hakkında — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="580" Height="500"
+        MinWidth="500" MinHeight="420"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="24">
+
+        <ScrollViewer Grid.Row="0">
+            <StackPanel Spacing="16">
+
+                <!-- Başlık & Logo -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <Border Grid.Column="0" Background="#14FFFFFF" CornerRadius="12" Width="64" Height="64">
+                        <TextBlock Text="🎮" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                        <TextBlock Classes="title" Text="GLS — Game Localization System" FontSize="20"/>
+                        <TextBlock Classes="caption" Text="Sürüm 1.0.0 (x64) • .NET 8 • Avalonia UI 11" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Açıklama Kartı -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="body" TextWrapping="Wrap"
+                                   Text="GLS; modern video oyunlarının arşiv dosyalarını (.pak, LSPak, Zip, PAK) ve ikili yerelleştirme tablolarını (.locres, XML) doğrudan açıp, gelişmiş yapay zeka modelleriyle bağlama duyarlı olarak Türkçeleştiren ve orijinal arşiv yapısını bozmadan oyun yaması üreten profesyonel masaüstü yerelleştirme sistemidir."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Temel Yetenekler Kartı -->
+                <Border Classes="card">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="heading" Text="✨ Temel Yetenekler &amp; Özellikler"/>
+                        <TextBlock Classes="caption" Text="• Unreal Engine (.pak V1–V11+) AES-256 şifre çözme &amp; yeniden paketleme"/>
+                        <TextBlock Classes="caption" Text="• Unreal Locres (V1, V2, V3) UTF-8/UTF-16 ikili metin ayrıştırma &amp; derleme"/>
+                        <TextBlock Classes="caption" Text="• Larian Studios (Baldur's Gate 3 / Divinity) LSPak &amp; Localization XML"/>
+                        <TextBlock Classes="caption" Text="• Çoklu AI Motoru: Google Gemini, Groq Cloud, Anthropic Claude, OpenAI, DeepSeek, Kimi, Qwen, Ollama &amp; LM Studio"/>
+                        <TextBlock Classes="caption" Text="• Canlı RAM Belleğinden AES Anahtarı Çıkarıcı (RAM Dumper)"/>
+                        <TextBlock Classes="caption" Text="• Değişken ve Kod Maskeleme Motoru ({0}, %s, &lt;tags&gt;) koruması"/>
+                        <TextBlock Classes="caption" Text="• Özel İsimler &amp; Terimler Sözlüğü (Glossary) &amp; Çeviri Belleği (TM)"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Lisans Kartı -->
+                <Border Classes="card">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Classes="caption" Text="Lisans: MIT License (Açık Kaynak Kodlu)" FontWeight="SemiBold"/>
+                            <TextBlock Classes="caption" Text="Tüm hakları saklıdır. Topluluk katkılarına açıktır."/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="🌐 GitHub Deposu" Classes="secondary" Click="OnOpenGitHubClick" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Kapat Butonu -->
+        <Border Grid.Row="1" Margin="0,14,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0">
+            <Button Content="Kapat" Classes="accent" HorizontalAlignment="Right" Padding="24,6" Click="OnCloseClick"/>
+        </Border>
+
+    </Grid>
+</Window>

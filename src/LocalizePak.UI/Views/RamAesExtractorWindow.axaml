@@ -1,0 +1,138 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:svc="using:LocalizePak.IO.Services"
+        x:Class="LocalizePak.UI.Views.RamAesExtractorWindow"
+        x:DataType="vm:RamAesExtractorViewModel"
+        Title="🎮 Canlı Oyundan AES Çıkarıcı (RAM Dumper) — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="780" Height="680"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20,16">
+
+        <!-- Başlık -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="🎮  Canlı Oyundan AES Anahtarı Çıkarıcı (RAM Dumper)"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+            <TextBlock Text="Oyunu açıp ana menüye geldikten sonra listeden seçin ve belleği taratın."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Margin="0,3,0,0"/>
+        </StackPanel>
+
+        <!-- ⚠️ ANTI-CHEAT & GÜVENLİK UYARISI (SORUMLULUK REDDİ) -->
+        <Border Grid.Row="1"
+                Background="#2A1805"
+                BorderBrush="#F59E0B"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14,10"
+                Margin="0,0,0,14">
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Grid.Column="0" Text="⚠️" FontSize="22" VerticalAlignment="Top" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="ÖNEMLİ GÜVENLİK &amp; ANTİ-HİLE (ANTI-CHEAT) UYARISI"
+                               FontWeight="Bold" FontSize="12"
+                               Foreground="#FCD34D"/>
+                    <TextBlock Text="Bu özellik, çalışan oyun sürecinin RAM belleğini (ReadProcessMemory) okuyarak şifreleme anahtarını yakalar. EasyAntiCheat (EAC), BattlEye, Vanguard veya Denuvo gibi çekirdek düzeyinde (Kernel-level) hile koruması içeren çevrimiçi oyunlarda bellek taraması güvenlik ihlali olarak algılanabilir ve hesap engeline (Ban) yol açabilir."
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="#FDE68A"/>
+                    <TextBlock Text="💡 TAVSİYE: Yalnızca tek kişilik (Single-Player), hikayeli ve üçüncü parti anti-hile koruması olmayan oyunlarda kullanınız. Oluşabilecek oyun içi yasaklamalardan GLS sorumlu değildir."
+                               FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap"
+                               Foreground="#F59E0B"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Çalışan Oyunlar / Süreçler Listesi -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource CardBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,12">
+            <Grid RowDefinitions="Auto,*">
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                    <TextBox Grid.Column="0"
+                             PlaceholderText="🔍  Açık oyunlarda veya pencerelerde ara..."
+                             Text="{Binding FilterText}"
+                             Margin="0,0,8,0"/>
+                    <Button Grid.Column="1"
+                            Content="🔄  Yenile"
+                            Classes="secondary"
+                            Command="{Binding RefreshProcessesCommand}"/>
+                </Grid>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding ProcessList}"
+                         SelectedItem="{Binding SelectedProcess}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="svc:RunningGameProcess">
+                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,2">
+                                <TextBlock Grid.Column="0" Text="🕹️" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding MainWindowTitle}"
+                                               FontWeight="SemiBold" FontSize="13"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               IsVisible="{Binding MainWindowTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    <TextBlock Text="{Binding ProcessName, StringFormat='{}{0}.exe'}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding Id, StringFormat='PID: {0}'}"
+                                           FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Tarama ve İlerleme -->
+        <StackPanel Grid.Row="3" Spacing="8" Margin="0,0,0,12">
+            <ProgressBar Value="{Binding ScanProgress}" Maximum="100" Height="6"
+                         IsVisible="{Binding IsScanning}"
+                         Foreground="{DynamicResource AccentHoverBrush}"/>
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Sonuç & Eylemler -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0">
+            <!-- Bulunan Anahtar -->
+            <TextBox Grid.Column="0"
+                     IsReadOnly="True"
+                     Text="{Binding FoundAesKey}"
+                     PlaceholderText="Anahtar bulunduğunda burada görünecektir (0x...)"
+                     FontFamily="Consolas, monospace"
+                     FontSize="12"
+                     Margin="0,0,8,0"/>
+
+            <!-- Tara Butonu -->
+            <Button Grid.Column="1"
+                    Content="🚀  Belleği Tara"
+                    Classes="accent"
+                    Command="{Binding StartScanCommand}"
+                    IsEnabled="{Binding !IsScanning}"
+                    Margin="0,0,8,0"/>
+
+            <!-- Anahtarı Uygula -->
+            <Button Grid.Column="2"
+                    Content="✅  Anahtarı Uygula"
+                    Classes="secondary"
+                    Command="{Binding ApplyKeyCommand}"
+                    IsEnabled="{Binding HasFoundKey}"
+                    Click="OnApplyCloseClick"/>
+        </Grid>
+    </Grid>
+</Window>

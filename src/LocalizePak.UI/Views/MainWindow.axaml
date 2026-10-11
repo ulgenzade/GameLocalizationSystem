@@ -1,0 +1,912 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:dg="using:Avalonia.Controls"
+        mc:Ignorable="d"
+        x:Class="LocalizePak.UI.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="GLS — Game Localization System"
+        Icon="/Assets/glslogo.ico"
+        Width="1420" Height="890"
+        MinWidth="1040" MinHeight="700"
+        Background="Transparent"
+        TransparencyLevelHint="Mica, AcrylicBlur"
+        DragDrop.AllowDrop="True">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- KLAVYE KISAYOLLARI (HOTKEYS)                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="F5" Command="{Binding StartTranslationCommand}"/>
+        <KeyBinding Gesture="F6" Command="{Binding ResumeTranslationCommand}"/>
+        <KeyBinding Gesture="F7" Command="{Binding RunQaCheckCommand}"/>
+        <KeyBinding Gesture="Ctrl+F" Command="{Binding ToggleFindReplaceCommand}"/>
+        <KeyBinding Gesture="Ctrl+H" Command="{Binding ToggleFindReplaceCommand}"/>
+        <KeyBinding Gesture="Ctrl+Enter" Command="{Binding StartTranslationCommand}"/>
+        <KeyBinding Gesture="Ctrl+R" Command="{Binding RetryErrorsCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding TranslateSelectedCommand}"/>
+        <KeyBinding Gesture="Escape" Command="{Binding StopTranslationCommand}"/>
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenPakCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+O" Command="{Binding OpenSingleFileCommand}"/>
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding ExportToTimestampedFolderCommand}"/>
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding SavePakDirectCommand}"/>
+    </Window.KeyBindings>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- WINUI 3 / WINDOWS 11 FLUENT 2 ANA DÜZEN                            -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}">
+
+        <!-- ─── 1. WINUI 3 BAŞLIK ÇUBUĞU & MENÜ BARI ─── -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SidebarBackgroundBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="12,6">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <!-- Logo & GLS Başlık -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="4,0,18,0">
+                    <Border Background="#1AFFFFFF" CornerRadius="8" Width="30" Height="30" VerticalAlignment="Center">
+                        <TextBlock Text="🎮" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Text="GLS" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Game Localization System" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- WinUI 3 Menü Çubuğu -->
+                <Menu Grid.Column="1" Background="Transparent" VerticalAlignment="Center">
+                    <MenuItem Header="_Dosya">
+                        <MenuItem Header="🗂️  .pak Dosyası Aç... (Ctrl+O)" Command="{Binding OpenPakCommand}"/>
+                        <MenuItem Header="📄  Lokalizasyon Dosyası Aç... (.locres, .json, .csv) (Ctrl+Shift+O)" Command="{Binding OpenSingleFileCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="🚀  Tarihli Klasöre Çıkart (Orijinal İsimle)... (Ctrl+E)" Command="{Binding ExportToTimestampedFolderCommand}"/>
+                        <MenuItem Header="📂  Son Çıktı Klasörünü Aç" Command="{Binding OpenOutputFolderCommand}" IsEnabled="{Binding HasExportedDirectory}"/>
+                        <Separator/>
+                        <MenuItem Header="📥  Çevirileri CSV Olarak Dışa Aktar (Excel)..." Command="{Binding ExportTranslationsCsvCommand}"/>
+                        <MenuItem Header="📤  Düzenlenmiş CSV'yi İçe Aktar..." Command="{Binding ImportTranslationsCsvCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="💾  Farklı Kaydet (Doğrudan Seç)... (Ctrl+S)" Command="{Binding SavePakDirectCommand}"/>
+                        <MenuItem Header="📦  Yama Paketi Olarak Dışa Aktar (_P.pak)..." Command="{Binding ExportPatchCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="🚪  Çıkış" Click="OnExitClick"/>
+                    </MenuItem>
+                    <MenuItem Header="_Düzenle">
+                        <MenuItem Header="🔍  Bul ve Değiştir... (Ctrl+H / Ctrl+F)" Command="{Binding ToggleFindReplaceCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📋  Kaynak Metni Kopyala" Command="{Binding CopySourceCommand}"/>
+                        <MenuItem Header="📋  Çeviri Metnini Kopyala" Command="{Binding CopyTranslationCommand}"/>
+                        <MenuItem Header="🔄  Orijinal Metni Çeviriye Aktar" Command="{Binding CopySourceToTranslationCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="☑️  Tümünü Seç" Command="{Binding SelectAllFilteredCommand}"/>
+                        <MenuItem Header="⬜  Seçimi Temizle" Command="{Binding DeselectAllCommand}"/>
+                    </MenuItem>
+                    <MenuItem Header="_Çeviri">
+                        <MenuItem Header="⏭️  Kaldığı Yerden Devam Et (F6)" Command="{Binding ResumeTranslationCommand}"/>
+                        <MenuItem Header="▶️  Çevirileri Sıfırdan Başlat (F5)" Command="{Binding StartTranslationCommand}"/>
+                        <MenuItem Header="⏹️  Durdur (Esc)" Command="{Binding StopTranslationCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="🛡️  Kalite Kontrolü (QA) Çalıştır (F7)" Command="{Binding RunQaCheckCommand}"/>
+                        <MenuItem Header="🛠️  Eksik Etiket ve Değişkenleri Otomatik Onar" Command="{Binding AutoFixAllQaIssuesCommand}"/>
+                        <MenuItem Header="✨  Seçili Satırı Yeniden Çevir" Command="{Binding RetranslateSingleCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="⚠️  Hata Raporu Al (CSV)..." Command="{Binding ExportErrorsCsvCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                    </MenuItem>
+                    <MenuItem Header="_Ayarlar">
+                        <MenuItem Header="⚙️  AI Motorları ve Tercihler..." Click="OnSettingsClick"/>
+                        <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                        <Separator/>
+                        <MenuItem Header="🗑️  Çeviri Belleğini (Hafızayı) Temizle" Command="{Binding ClearTranslationMemoryCommand}"/>
+                    </MenuItem>
+                    <MenuItem Header="_Yardım">
+                        <MenuItem Header="🎮  Canlı Oyundan AES Çıkarıcı (RAM Dumper)..." Click="OnRamAesExtractorClick"/>
+                        <MenuItem Header="🤖  AI Oyun Motoru &amp; AES Dedektifi..." Click="OnAiAesAssistantClick"/>
+                        <MenuItem Header="🔑  AES Anahtarı Nedir ve Nereden Bulunur?" Click="OnAesHelpClick"/>
+                        <Separator/>
+                        <MenuItem Header="📖  Kullanım Kılavuzu (WORKFLOW.md)" Click="OnHelpClick"/>
+                        <MenuItem Header="ℹ️  Hakkında — GLS" Click="OnAboutClick"/>
+                    </MenuItem>
+                </Menu>
+
+                <!-- Sağ Üst: Aktif AI InfoBadge & Düşünme Modu -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,4,0">
+                    <Border Background="#18FFFFFF" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="⚡" FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock Text="Motor:" Classes="caption" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedProviderName}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentHoverBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#18FFFFFF" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="6,2">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🧠" FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock Text="Düşünme:" Classes="caption" VerticalAlignment="Center"/>
+                            <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReasoningEffortOptions}"
+                                      SelectedItem="{Binding SelectedReasoningEffort}"
+                                      Width="140"
+                                      ToolTip.Tip="AI Düşünme &amp; Akıl Yürütme Seviyesi (Kapalı / Düşük / Orta / Yüksek)"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ─── 2. ANA GÖVDE (SEKMELİ NAVIGATION PANE + SEKMELİ MERKEZİ ÇALIŞMA ALANI) ─── -->
+        <Grid Grid.Row="1" ColumnDefinitions="340,1,*">
+
+            <!-- ─── SOL PANEL (WINUI 3 SEKMELİ NAVIGATION PANE) ─── -->
+            <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}" Padding="10,8">
+                <TabControl>
+
+                    <!-- Sekme 1: Paket & Dosya İşlemleri -->
+                    <TabItem Header="📦 Paket">
+                        <ScrollViewer Margin="0,8,0,0">
+                            <StackPanel Spacing="10">
+
+                                <!-- Yüklü Paket Bilgi Kartı (WinUI 3 InfoBar Success Stili) -->
+                                <Border Classes="infobar-success" IsVisible="{Binding IsPakLoaded}">
+                                    <StackPanel Spacing="4">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <TextBlock Text="📦" FontSize="14" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding LoadedPakFileName}" FontWeight="Bold" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" Background="#26FFFFFF" CornerRadius="4" Padding="6,2">
+                                                <TextBlock Text="{Binding LoadedPakSizeInfo}" FontSize="10" FontWeight="SemiBold" Foreground="#E0E0E0"/>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Text="✅ Arşiv Başarıyla Ayrıştırıldı ve Hazır" FontSize="11" Foreground="#A5D6A7"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Henüz Yüklenmedi Kartı (WinUI 3 DragDrop Zone) -->
+                                <Border Background="#1C1C1C" BorderBrush="#2D2D2D" BorderThickness="1" CornerRadius="8" Padding="14" IsVisible="{Binding !IsPakLoaded}">
+                                    <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                        <TextBlock Text="📦" FontSize="26" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Henüz .pak Dosyası Yüklenmedi" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Bir dosya seçin veya buraya sürükleyin" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Ana Paket & Dosya Aç Butonları -->
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                    <Button Grid.Column="0" Content="🗂️  .pak Aç"
+                                            Classes="accent"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            Padding="0,9"
+                                            Command="{Binding OpenPakCommand}"
+                                            IsEnabled="{Binding !IsLoading}"/>
+                                    <Button Grid.Column="1" Content="📄  Dosya Aç"
+                                            Classes="secondary"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            Padding="0,9"
+                                            Command="{Binding OpenSingleFileCommand}"
+                                            IsEnabled="{Binding !IsLoading}"
+                                            ToolTip.Tip="Doğrudan .locres, .json, .csv, .xml veya .po dosyasını açar."/>
+                                </Grid>
+
+                                <!-- Hızlı Dışa Aktarma & Çıktı Kartı -->
+                                <Border Classes="card" Padding="12">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="caption" Text="Çıktı &amp; Yamalama Eylemleri" FontWeight="SemiBold"/>
+                                        <Button Content="🚀  Orijinal İsimle Çıktı Al"
+                                                Classes="success"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Command="{Binding ExportToTimestampedFolderCommand}"
+                                                ToolTip.Tip="Orijinal dosya adıyla (örn. English.pak) tarihli izole bir klasöre kaydeder."/>
+                                        <Button Content="📂  Çıktı Klasörünü Aç"
+                                                Classes="secondary"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Command="{Binding OpenOutputFolderCommand}"
+                                                IsEnabled="{Binding HasExportedDirectory}"/>
+                                        <Button Content="📦  Yama Paketi (_P.pak)"
+                                                Classes="secondary"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Command="{Binding ExportPatchCommand}"
+                                                ToolTip.Tip="Sadece çevrilen dosyaları içeren hafif mod yaması üretir."/>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Sekme 2: Arşiv İçeriği (Dosya Ağacı) -->
+                    <TabItem Header="📄 Arşiv Dosyaları">
+                        <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,0,6">
+                                <TextBlock Classes="caption" Text="Lokalizasyon Dosyaları" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="1" Classes="caption" Text="{Binding PakEntries.Count, StringFormat='{}{0} dosya'}"/>
+                            </Grid>
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding PakEntries}"
+                                     SelectedItem="{Binding SelectedPakEntry}"
+                                     Background="#1B1B1B"
+                                     BorderBrush="{DynamicResource CardStrokeBrush}"
+                                     BorderThickness="1"
+                                     CornerRadius="8">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <TextBlock Grid.Column="0" Text="📄" FontSize="12" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding VirtualPath}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"
+                                                       ToolTip.Tip="{Binding VirtualPath}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- Sekme 3: AES Şifreleme Araçları -->
+                    <TabItem Header="🔑 AES Şifre">
+                        <ScrollViewer Margin="0,8,0,0">
+                            <StackPanel Spacing="10">
+                                <Border Background="#222222" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="caption" Text="🔑 AES-256 Şifreleme Anahtarı" FontWeight="SemiBold"/>
+                                        <TextBox PlaceholderText="0x... (Gerekiyorsa)"
+                                                 Text="{Binding AesKey}"
+                                                 PasswordChar="•"
+                                                 FontSize="12"/>
+                                        <TextBlock Classes="caption" Text="Unreal Engine şifreli paketleri için gereklidir." Foreground="{DynamicResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Classes="card" Padding="12">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="caption" Text="Canlı Oyun ve AI Araçları" FontWeight="SemiBold"/>
+                                        <Button Content="🎮  Canlı Oyundan AES Çıkarıcı"
+                                                Classes="secondary"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Click="OnRamAesExtractorClick"
+                                                ToolTip.Tip="Açık oyunun RAM belleğini tarayarak AES anahtarını otomatik bulur."/>
+                                        <Button Content="🤖  AI ile AES &amp; Motor Bul"
+                                                Classes="secondary"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Click="OnAiAesAssistantClick"
+                                                ToolTip.Tip="Yapay zekaya oyun adını sorarak motoru ve bilinen AES anahtarını aratın."/>
+                                        <Button Content="❓  AES Anahtarı Nedir?"
+                                                Classes="subtle"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Click="OnAesHelpClick"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+            <!-- ─── AYIRICI ÇİZGİ (DIVIDER) ─── -->
+            <Rectangle Grid.Column="1" Fill="{DynamicResource DividerBrush}"/>
+
+            <!-- ─── SAĞ PANEL (WINUI 3 SEKMELİ MERKEZİ ÇALIŞMA ALANI) ─── -->
+            <Border Grid.Column="2" Background="{DynamicResource WindowBackgroundBrush}" Padding="12,8">
+                <TabControl>
+
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <!-- SEKME 1: ÇEVİRİ TABLOSU & EDİTÖR                                 -->
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <TabItem Header="📋 Çeviri Tablosu &amp; Editör">
+                        <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">
+
+                            <!-- ─── 1. COMMANDBAR (KOMUT & FİLTRE ÇUBUĞU) ─── -->
+                            <Border Grid.Row="0"
+                                    Background="{DynamicResource CardBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    Margin="0,0,0,8">
+                                <StackPanel Spacing="10">
+
+                                    <!-- 1. Katman: Arama Kutusu, Durum Filtresi, Diller & Hızlı Butonlar -->
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+
+                                        <!-- Arama Kutusu -->
+                                        <TextBox Grid.Column="0"
+                                                 PlaceholderText="🔍  Metinlerde ara..."
+                                                 Text="{Binding FilterText}"
+                                                 MinWidth="150"/>
+
+                                        <!-- Gelişmiş Durum Filtresi (Dropdown) -->
+                                        <ComboBox Grid.Column="1"
+                                                  ItemsSource="{x:Static vm:MainViewModel.StatusFilterOptions}"
+                                                  SelectedItem="{Binding SelectedStatusFilter}"
+                                                  Width="165"
+                                                  ToolTip.Tip="Durum Filtresi (Tümü / Bekleyenler / Tamamlananlar / Hatalar / Manuel / Taşma Riski / QA Hataları)"/>
+
+                                        <!-- X ➔ X Dil Seçici Çifti -->
+                                        <Border Grid.Column="2" Background="#242424" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="4,2">
+                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <ComboBox ItemsSource="{x:Static vm:MainViewModel.SourceLanguages}"
+                                                          SelectedItem="{Binding SelectedSourceLanguage}"
+                                                          Width="110" ToolTip.Tip="Kaynak Dil"/>
+                                                <TextBlock Text="➔" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                                <ComboBox ItemsSource="{x:Static vm:MainViewModel.TargetLanguages}"
+                                                          SelectedItem="{Binding SelectedTargetLanguage}"
+                                                          Width="105" ToolTip.Tip="Hedef Dil"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Toplu Bul ve Değiştir Aç/Kapa Butonu -->
+                                        <Button Grid.Column="3"
+                                                Content="🔍  Bul/Değiştir"
+                                                Classes="secondary"
+                                                Command="{Binding ToggleFindReplaceCommand}"
+                                                Padding="10,6"
+                                                FontSize="12"
+                                                ToolTip.Tip="Toplu Bul ve Değiştir Paneli (Ctrl+H / Ctrl+F)"/>
+
+                                        <!-- Kalite Kontrol (QA) Çalıştır -->
+                                        <Button Grid.Column="4"
+                                                Content="🛡️  QA (F7)"
+                                                Classes="secondary"
+                                                Command="{Binding RunQaCheckCommand}"
+                                                Padding="10,6"
+                                                FontSize="12"
+                                                Foreground="{DynamicResource AccentHoverBrush}"
+                                                ToolTip.Tip="Eksik değişken ({0}, {PlayerName}) ve kapanmayan HTML etiketlerini tespit eder."/>
+
+                                        <!-- Otomatik Onar Butonu -->
+                                        <Button Grid.Column="5"
+                                                Content="🛠️  Onar"
+                                                Classes="secondary"
+                                                Command="{Binding AutoFixAllQaIssuesCommand}"
+                                                Padding="10,6"
+                                                FontSize="12"
+                                                Foreground="{DynamicResource SuccessBrush}"
+                                                ToolTip.Tip="Eksik değişken ve etiketleri otomatik olarak satır sonuna tamamlar."/>
+
+                                        <!-- Diff / Karşılaştır Butonu -->
+                                        <Button Grid.Column="6"
+                                                Content="🔍  Diff"
+                                                Classes="secondary"
+                                                Click="OnInspectDiffClick"
+                                                Padding="10,6"
+                                                FontSize="12"
+                                                ToolTip.Tip="Seçili satırı çift panelli pencerede detaylı inceler."/>
+                                    </Grid>
+
+                                    <!-- 2. Katman: Seçim Butonları, Özel Çeviriler ve Birincil Yürütme Butonları -->
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+
+                                        <!-- Seçim Kontrolleri -->
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="Seçim:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                            <Button Content="☑️  Tümü" Classes="secondary" Command="{Binding SelectAllFilteredCommand}" Padding="10,5" FontSize="11" ToolTip.Tip="Görünen tüm satırları seç"/>
+                                            <Button Content="⚠️  Hatalar" Classes="secondary" Command="{Binding SelectOnlyErrorsCommand}" Padding="10,5" FontSize="11" Foreground="{DynamicResource ErrorBrush}" ToolTip.Tip="Yalnızca hatalı satırları seç"/>
+                                            <Button Content="⬜  Kaldır" Classes="secondary" Command="{Binding DeselectAllCommand}" Padding="10,5" FontSize="11" ToolTip.Tip="Tüm seçimleri temizle"/>
+                                        </StackPanel>
+
+                                        <!-- Özel Çeviri Aksiyonları -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,0,12,0">
+                                            <Button Content="✨  Seçilenleri Çevir"
+                                                    Classes="secondary"
+                                                    Command="{Binding TranslateSelectedCommand}"
+                                                    Padding="12,6"
+                                                    ToolTip.Tip="Yalnızca kutucukla seçtiğiniz satırları çevirir."/>
+
+                                            <Button Content="🔄  Hatalıları Tekrar Dene"
+                                                    Classes="secondary"
+                                                    Command="{Binding RetryErrorsCommand}"
+                                                    Foreground="{DynamicResource WarningBrush}"
+                                                    Padding="12,6"
+                                                    ToolTip.Tip="Yalnızca hata alan satırları yeniden dener."/>
+                                        </StackPanel>
+
+                                        <!-- Birincil Yürütme Butonları -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                            <Button Content="⏭️  Devam Et (F6)"
+                                                    Classes="accent"
+                                                    Command="{Binding ResumeTranslationCommand}"
+                                                    Padding="14,6"
+                                                    FontWeight="SemiBold"
+                                                    ToolTip.Tip="Yarım kalmış, bekleyen veya hatalı satırları kaldığı yerden devam ettirir (F6)"/>
+
+                                            <Button Content="▶️  Sıfırdan Başlat (F5)"
+                                                    Classes="secondary"
+                                                    Command="{Binding StartTranslationCommand}"
+                                                    Padding="12,6"
+                                                    ToolTip.Tip="Tüm dosyayı baştan çevirir (F5)"/>
+
+                                            <Button Content="⏹️  Durdur (Esc)"
+                                                    Classes="danger"
+                                                    Command="{Binding StopTranslationCommand}"
+                                                    Padding="12,6"
+                                                    ToolTip.Tip="Aktif çeviriyi durdurur (Esc)"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ─── 2. İÇERİK ALANI (RECOVERY + FIND/REPLACE + DATAGRID) ─── -->
+                            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*">
+
+                                <!-- Olası Çökme/Elektrik Kesintisi Kurtarma Bildirimi -->
+                                <Border Grid.Row="0" Background="#3B2608" BorderBrush="#E09F3E" BorderThickness="1" CornerRadius="8" Margin="0,0,0,8" Padding="12,8"
+                                        IsVisible="{Binding HasRecoverySession}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <TextBlock Grid.Column="0" Text="⚠️" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding RecoverySessionInfo}" FontWeight="SemiBold" Foreground="#FBD38D" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="🔄  Oturumu Geri Yükle" Classes="accent" Command="{Binding RestoreRecoverySessionCommand}" Margin="0,0,8,0" Padding="10,4"/>
+                                        <Button Grid.Column="3" Content="✕  Yok Say" Classes="secondary" Command="{Binding DismissRecoverySessionCommand}" Padding="8,4"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- TOPLU BUL VE DEĞİŞTİR PANELİ -->
+                                <Border Grid.Row="1" Background="#242424" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,8" Padding="12,10"
+                                        IsVisible="{Binding IsFindReplaceOpen}">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                                            <TextBox Grid.Column="0" PlaceholderText="🔍 Aranacak kelime..." Text="{Binding FindText}"/>
+                                            <TextBox Grid.Column="1" PlaceholderText="✏️ Yeni değer..." Text="{Binding ReplaceText}"/>
+                                            <ComboBox Grid.Column="2" ItemsSource="{x:Static vm:MainViewModel.FindScopeOptions}" SelectedItem="{Binding FindScope}" Width="150"/>
+                                            <Button Grid.Column="3" Content="Tümünü Değiştir" Classes="accent" Command="{Binding ReplaceAllCommand}" Padding="12,5" FontWeight="SemiBold"/>
+                                            <Button Grid.Column="4" Content="Sonrakini Bul" Classes="secondary" Command="{Binding FindNextCommand}" Padding="10,5"/>
+                                            <Button Grid.Column="5" Content="✕" Classes="secondary" Command="{Binding CloseFindReplaceCommand}" Padding="8,5" ToolTip.Tip="Paneli Kapat (Esc)"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="14">
+                                            <CheckBox Grid.Column="0" Content="Büyük/Küçük Harf Duyarlı" IsChecked="{Binding MatchCase}"/>
+                                            <CheckBox Grid.Column="1" Content="Tam Kelime" IsChecked="{Binding MatchWholeWord}"/>
+                                            <CheckBox Grid.Column="2" Content="Regex" IsChecked="{Binding UseRegex}"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding FindResultInfo}" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- DATAGRID ÇEVİRİ EDİTÖRÜ -->
+                                <DataGrid Grid.Row="2"
+                                          Name="EntriesDataGrid"
+                                          ItemsSource="{Binding FilteredEntries}"
+                                          SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                                          Background="#181818"
+                                          RowBackground="#181818"
+                                          GridLinesVisibility="Horizontal"
+                                          BorderThickness="1"
+                                          BorderBrush="{DynamicResource CardStrokeBrush}"
+                                          CornerRadius="8"
+                                          CanUserResizeColumns="True"
+                                          CanUserSortColumns="True"
+                                          IsReadOnly="False"
+                                          AutoGenerateColumns="False"
+                                          SelectionMode="Single"
+                                          DoubleTapped="OnDataGridDoubleTapped"
+                                          RowHeight="36">
+                                    <DataGrid.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="📋  Kaynak Metni Kopyala" Command="{Binding CopySourceCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <MenuItem Header="📋  Çeviri Metnini Kopyala" Command="{Binding CopyTranslationCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <MenuItem Header="🔄  Orijinal Metni Çeviriye Aktar" Command="{Binding CopySourceToTranslationCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <Separator/>
+                                            <MenuItem Header="✨  Bu Satırı Tek Başına Yeniden Çevir" Command="{Binding RetranslateSingleCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <MenuItem Header="🌐  Google Translate'de Aç..." Command="{Binding OpenInGoogleTranslateCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <MenuItem Header="🔍  Detaylı İncele (Diff / Yan Yana)..." Click="OnInspectDiffClick"/>
+                                            <Separator/>
+                                            <MenuItem Header="✓  Tamamlandı Olarak İşaretle" Command="{Binding MarkAsDoneCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                            <MenuItem Header="⏳  Bekliyor Olarak İşaretle" Command="{Binding MarkAsPendingCommand}" CommandParameter="{Binding SelectedEntry}"/>
+                                        </ContextMenu>
+                                    </DataGrid.ContextMenu>
+                                    <DataGrid.Columns>
+                                        <!-- Seçim Kutucuğu -->
+                                        <DataGridTemplateColumn Header="☑️" Width="44" IsReadOnly="False">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="vm:LocalizationEntryViewModel">
+                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+
+                                        <!-- Durum Rozeti (WinUI 3 Pill) & QA İkonu -->
+                                        <DataGridTemplateColumn Header="Durum" Width="115" IsReadOnly="True">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="vm:LocalizationEntryViewModel">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                                        <Border CornerRadius="10" Padding="8,2" Margin="2,2"
+                                                                Background="{Binding StatusColor}"
+                                                                HorizontalAlignment="Center">
+                                                            <TextBlock Text="{Binding StatusLabel}"
+                                                                       FontSize="11" FontWeight="SemiBold"
+                                                                       Foreground="White"
+                                                                       HorizontalAlignment="Center"/>
+                                                        </Border>
+                                                        <TextBlock Text="⚠️" FontSize="11" VerticalAlignment="Center"
+                                                                   IsVisible="{Binding HasQaIssue}"
+                                                                   ToolTip.Tip="{Binding Notes}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+
+                                        <!-- Namespace -->
+                                        <DataGridTextColumn Header="Namespace"
+                                                            Binding="{Binding Namespace}"
+                                                            Width="140"
+                                                            IsReadOnly="True"
+                                                            FontSize="12"
+                                                            FontFamily="Cascadia Code, Consolas, monospace"/>
+
+                                        <!-- Anahtar -->
+                                        <DataGridTextColumn Header="Anahtar (Key)"
+                                                            Binding="{Binding Key}"
+                                                            Width="160"
+                                                            IsReadOnly="True"
+                                                            FontSize="12"
+                                                            FontFamily="Cascadia Code, Consolas, monospace"/>
+
+                                        <!-- Orijinal Kaynak Metin -->
+                                        <DataGridTextColumn Header="Kaynak Metin (Orijinal)"
+                                                            Binding="{Binding SourceText}"
+                                                            Width="*"
+                                                            IsReadOnly="True"
+                                                            FontSize="13"/>
+
+                                        <!-- Hedef Çeviri (Düzenlenebilir) -->
+                                        <DataGridTextColumn Header="Hedef Çeviri (Düzenlenebilir)"
+                                                            Binding="{Binding TranslatedText}"
+                                                            Width="*"
+                                                            IsReadOnly="False"
+                                                            FontSize="13"/>
+
+                                        <!-- Karakter Farkı / UI Taşma Analizi -->
+                                        <DataGridTextColumn Header="Karakter / UI"
+                                                            Binding="{Binding LengthInfo}"
+                                                            Width="140"
+                                                            IsReadOnly="True"
+                                                            FontSize="11"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+
+                            <!-- ─── 3. ÇEVİRİ DİREKTİFİ KARTI ─── -->
+                            <Border Grid.Row="2"
+                                    Background="{DynamicResource CardBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,8"
+                                    Margin="0,8,0,0">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <TextBlock Text="📝" FontSize="14" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Çeviri Direktifi:"
+                                                   VerticalAlignment="Center"
+                                                   Classes="caption"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding UserDirective}"
+                                             PlaceholderText="Örnek: Oyun karanlık fantezi temalıdır, karakter konuşmaları epik ve arkaik Türkçe olsun..."
+                                             MaxLines="2"
+                                             AcceptsReturn="True"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- ─── 4. CANLI İLERLEME & İSTATİSTİK BARI ─── -->
+                            <Border Grid.Row="3"
+                                    Background="#242424"
+                                    BorderBrush="{DynamicResource CardStrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,8"
+                                    Margin="0,8,0,0"
+                                    IsVisible="{Binding IsTranslating}">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="⚡" FontSize="14" VerticalAlignment="Center"/>
+                                            <TextBlock Classes="caption" FontWeight="SemiBold" Text="Yapay Zeka Çevirisi Sürüyor..."/>
+                                        </StackPanel>
+
+                                        <!-- Canlı Metrik Rozetleri -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" Margin="0,0,16,0" VerticalAlignment="Center">
+                                            <Border Background="#1AFFFFFF" CornerRadius="4" Padding="8,2">
+                                                <TextBlock Classes="caption" Text="{Binding ElapsedTime, StringFormat='⏱️ Geçen: {0}'}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            </Border>
+                                            <Border Background="#1AFFFFFF" CornerRadius="4" Padding="8,2">
+                                                <TextBlock Classes="caption" Text="{Binding EstimatedTimeRemaining, StringFormat='⏳ Kalan: {0}'}" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                                            </Border>
+                                            <Border Background="#1AFFFFFF" CornerRadius="4" Padding="8,2">
+                                                <TextBlock Classes="caption" Text="{Binding TranslationSpeed, StringFormat='⚡ Hız: {0}'}" Foreground="{DynamicResource SuccessBrush}"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- Yüzde Göstergesi -->
+                                        <TextBlock Grid.Column="4" Classes="caption" FontWeight="Bold"
+                                                   Text="{Binding TranslationProgress, StringFormat='{}{0:F0}%'}"
+                                                   Foreground="{DynamicResource AccentHoverBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ProgressBar Value="{Binding TranslationProgress}" Maximum="100" Height="6"/>
+                                </StackPanel>
+                            </Border>
+
+                        </Grid>
+                    </TabItem>
+
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <!-- SEKME 2: İSTATİSTİKLER & ÖZET ANALİZ                             -->
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <TabItem Header="📊 İstatistikler &amp; Özet">
+                        <ScrollViewer Margin="0,8,0,0">
+                            <StackPanel Spacing="14">
+
+                                <!-- Üst 4'lü KPI Kartları -->
+                                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+
+                                    <!-- Kart 1: Toplam Satır -->
+                                    <Border Grid.Column="0" Classes="card" Padding="14">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="📦 Toplam Satır" Classes="caption" Foreground="{DynamicResource TextMutedBrush}"/>
+                                            <TextBlock Text="{Binding TotalEntries}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="Ayrıştırılmış metinler" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Kart 2: Tamamlanan -->
+                                    <Border Grid.Column="1" Background="#142A19" BorderBrush="#236B36" BorderThickness="1" CornerRadius="8" Padding="14">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="✓ Tamamlanan" Classes="caption" Foreground="#81C784"/>
+                                            <TextBlock Text="{Binding CompletedEntries}" FontSize="22" FontWeight="Bold" Foreground="#66BB6A"/>
+                                            <TextBlock Text="{Binding CompletionPercentage, StringFormat='İlerleme: %{0}'}" FontSize="11" Foreground="#A5D6A7" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Kart 3: Bekleyen -->
+                                    <Border Grid.Column="2" Background="#1A2533" BorderBrush="#1E4976" BorderThickness="1" CornerRadius="8" Padding="14">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="⏳ Bekleyen" Classes="caption" Foreground="#90CAF9"/>
+                                            <TextBlock Text="{Binding PendingEntries}" FontSize="22" FontWeight="Bold" Foreground="#64B5F6"/>
+                                            <TextBlock Text="Çevrilmeyi bekliyor" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Kart 4: Hata Alanlar -->
+                                    <Border Grid.Column="3" Background="#331417" BorderBrush="#772027" BorderThickness="1" CornerRadius="8" Padding="14">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="✗ Hata Sayısı" Classes="caption" Foreground="#EF9A9A"/>
+                                            <TextBlock Text="{Binding ErrorCount}" FontSize="22" FontWeight="Bold" Foreground="#E57373"/>
+                                            <TextBlock Text="Yeniden denenebilir" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Hacim & Kalite Detay Kartları -->
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
+                                    <!-- Sol: Hacim Analizi -->
+                                    <Border Grid.Column="0" Classes="card" Padding="16">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="📝 Metin &amp; Dil Hacmi" Classes="heading"/>
+                                            <Separator Background="{DynamicResource CardStrokeBrush}"/>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Kaynak Dil Kelime Sayısı:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding TotalSourceWords, StringFormat='{}{0:N0} kelime'}" FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Toplam Karakter Sayısı:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding TotalSourceChars, StringFormat='{}{0:N0} karakter'}" FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Manuel Düzenlenen Satırlar:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding ManuallyEditedCount}" FontWeight="SemiBold" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Kaynak / Hedef Dil:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SelectedSourceLanguage, StringFormat='{}{0} ➔ Türkçe'}" FontWeight="SemiBold"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Sağ: Risk & QA Durumu -->
+                                    <Border Grid.Column="1" Classes="card" Padding="16">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="🛡️ Kalite &amp; Arayüz Taşma Riski" Classes="heading"/>
+                                            <Separator Background="{DynamicResource CardStrokeBrush}"/>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Etiket / Değişken (QA) Uyarısı:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding QaIssueCount}" FontWeight="Bold" Foreground="#F59E0B"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Metin Taşma Riski (%40+ Fark):" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding OverflowRiskCount}" FontWeight="Bold" Foreground="#EF4444"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="Aktif AI Çeviri Motoru:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SelectedProviderName}" FontWeight="SemiBold" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                            </Grid>
+
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                <TextBlock Text="AI Akıl Yürütme Modu:" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding SelectedReasoningEffort}" FontWeight="SemiBold"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Hızlı Eylem Çubuğu -->
+                                <Border Classes="card" Padding="14">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                        <TextBlock Grid.Column="0" Text="⚡ Hızlı Eylemler:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="⏭️  Kaldığı Yerden Devam Et (F6)" Classes="accent" Command="{Binding ResumeTranslationCommand}"/>
+                                        <Button Grid.Column="3" Content="🛠️  Eksikleri Onar" Classes="secondary" Command="{Binding AutoFixAllQaIssuesCommand}"/>
+                                        <Button Grid.Column="4" Content="📥  CSV Olarak Çıkart" Classes="secondary" Command="{Binding ExportTranslationsCsvCommand}"/>
+                                    </Grid>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <!-- SEKME 3: KALİTE KONTROL (QA) & BÜTÜNLÜK                         -->
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <TabItem Header="🛡️ Kalite Kontrol (QA)">
+                        <ScrollViewer Margin="0,8,0,0">
+                            <StackPanel Spacing="14">
+
+                                <Border Classes="card" Padding="16">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="🛡️ Oyun Yerelleştirme Kalite ve Bütünlük Kuralları" Classes="heading"/>
+                                        <TextBlock Text="Oyun diyaloglarında kod değişkenlerinin ({0}, %s, {PlayerName}) silinmesi oyunun çökmesine yol açabilir. Bu denetim motoru tüm satırları tarar." Classes="caption"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+
+                                    <Border Grid.Column="0" Classes="card" Padding="14">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="📌 Kod Değişkenleri" FontWeight="SemiBold" FontSize="13"/>
+                                            <TextBlock Text="{Binding QaIssueCount, StringFormat='{}{0} sorun tespit edildi'}" Foreground="#F59E0B" FontWeight="Bold"/>
+                                            <TextBlock Text="{}{0}, %s, {PlayerName}, [VAR_X] etiketlerinin korunumu." Classes="caption"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="1" Classes="card" Padding="14">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="🎨 HTML &amp; Renk Etiketleri" FontWeight="SemiBold" FontSize="13"/>
+                                            <TextBlock Text="Etiket Çiftleri Doğrulandı" Foreground="#10B981" FontWeight="Bold"/>
+                                            <TextBlock Text="Kapanmayan &lt;color&gt;, &lt;font&gt; veya BBCode etiketleri taranır." Classes="caption"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Grid.Column="2" Classes="card" Padding="14">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="📐 Arayüz Alan Taşması" FontWeight="SemiBold" FontSize="13"/>
+                                            <TextBlock Text="{Binding OverflowRiskCount, StringFormat='{}{0} satır riskli'}" Foreground="#EF4444" FontWeight="Bold"/>
+                                            <TextBlock Text="Orijinalinden %40 daha uzun metinler butonlardan taşabilir." Classes="caption"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Otomatik Onarım & Aksiyonlar -->
+                                <Border Background="#1C2735" BorderBrush="#2563EB" BorderThickness="1" CornerRadius="8" Padding="16">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                                            <TextBlock Text="🛠️ Otomatik Değişken ve Etiket Tamamlayıcı" FontWeight="Bold" FontSize="14" Foreground="#93C5FD"/>
+                                            <TextBlock Text="Eksik kalan veya yapay zekanın unuttuğu değişkenleri otomatik olarak çevirinin sonuna ekler." Classes="caption" Foreground="#BFDBFE"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="🛡️  QA Tara (F7)" Classes="secondary" Command="{Binding RunQaCheckCommand}" Padding="16,8"/>
+                                        <Button Grid.Column="2" Content="🛠️  Tümünü Otomatik Onar" Classes="accent" Command="{Binding AutoFixAllQaIssuesCommand}" Padding="16,8"/>
+                                    </Grid>
+                                </Border>
+
+                                <Border Classes="card" Padding="14">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Hatalı ve Sorunlu Satır Raporu" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Tüm hata alan ve QA uyarısı veren satırları Excel / CSV formatında detaylıca dışa aktarın." Classes="caption"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="⚠️  Hata Raporu Al (CSV)" Classes="secondary" Command="{Binding ExportErrorsCsvCommand}" Padding="14,8"/>
+                                    </Grid>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <!-- SEKME 4: ÇEVİRİ BELLEĞİ (TM) & SÖZLÜK                           -->
+                    <!-- ═══════════════════════════════════════════════════════════════ -->
+                    <TabItem Header="📚 Çeviri Belleği &amp; Sözlük">
+                        <ScrollViewer Margin="0,8,0,0">
+                            <StackPanel Spacing="14">
+
+                                <!-- Çeviri Belleği (Translation Memory) -->
+                                <Border Classes="card" Padding="16">
+                                    <StackPanel Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="🧠 Çeviri Belleği (Translation Memory &amp; Önbellek)" Classes="heading"/>
+                                                <TextBlock Text="Daha önce çevrilmiş birebir aynı cümleleri yerel diskte hatırlar ve tekrar API ücreti/kotası harcamaz." Classes="caption"/>
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="1" Content="Belleği Etkinleştir" IsChecked="{Binding EnableTranslationMemory}"/>
+                                        </Grid>
+                                        <Separator Background="{DynamicResource CardStrokeBrush}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="Önbelleğe alınmış çevirileri diskten temizlemek için:" VerticalAlignment="Center" Classes="caption"/>
+                                            <Button Grid.Column="1" Content="🗑️  Çeviri Belleğini Temizle" Classes="secondary" Command="{Binding ClearTranslationMemoryCommand}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Özel İsimler & Terimler Sözlüğü -->
+                                <Border Classes="card" Padding="16">
+                                    <StackPanel Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="📖 Özel İsimler &amp; Terimler Sözlüğü (Glossary)" Classes="heading"/>
+                                                <TextBlock Text="Oyun karakterleri, şehirler, özel terimler veya çevrilmemesi gereken isimler." Classes="caption"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="📚  Sözlüğü Aç..." Classes="accent" Click="OnGlossaryClick"/>
+                                        </Grid>
+                                        <Separator Background="{DynamicResource CardStrokeBrush}"/>
+                                        <TextBlock Text="{Binding GlossaryList.Count, StringFormat='Aktif Sözlük Girdisi: {0} adet kural yüklü.'}" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+        </Grid>
+
+        <!-- ─── 3. WINUI 3 DURUM ÇUBUĞU (FOOTER STATUS BAR) ─── -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SidebarBackgroundBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="14,8">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"
+                           Classes="caption"
+                           TextTrimming="CharacterEllipsis"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <Border Background="#14FFFFFF" CornerRadius="4" Padding="8,2">
+                        <TextBlock Classes="caption" Text="{Binding TotalEntries, StringFormat='📦 Toplam: {0}'}"/>
+                    </Border>
+                    <Border Background="#19391D" CornerRadius="4" Padding="8,2">
+                        <TextBlock Classes="caption" Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold" Text="{Binding CompletedEntries, StringFormat='✓ {0} Tamamlandı'}"/>
+                    </Border>
+                    <Border Background="#441A1E" CornerRadius="4" Padding="8,2">
+                        <TextBlock Classes="caption" Foreground="{DynamicResource ErrorBrush}" FontWeight="SemiBold" Text="{Binding ErrorCount, StringFormat='✗ {0} Hata'}"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

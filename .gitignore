@@ -1,0 +1,41 @@
+# .NET & Visual Studio
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+publish/
+
+# Debug Symbols
+*.pdb
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+
+# Crash & Temp logs
+crash_log.txt
+*.tmp
+*.log
+
+# Distribution & Publish
+dist/
+publish/
+
+# Local settings and secrets
+settings.json
+*.local.json
+appsettings*.local.json
+
+# OS generated files
+.DS_Store
+Thumbs.db

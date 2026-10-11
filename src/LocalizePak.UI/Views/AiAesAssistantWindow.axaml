@@ -1,0 +1,202 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LocalizePak.UI.Views.AiAesAssistantWindow"
+        Title="🤖 Akıllı Oyun &amp; Şifre Asistanı — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="740" Height="720"
+        MinWidth="600" MinHeight="540"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="24">
+
+        <ScrollViewer Grid.Row="0">
+            <StackPanel Spacing="16">
+
+                <!-- Başlık & Samimi Açıklama -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🤖" FontSize="22" VerticalAlignment="Center"/>
+                            <TextBlock Classes="subtitle" Text="Akıllı Oyun Motoru &amp; Şifre Asistanı" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Classes="caption"
+                                   Text="Paket dosyası şifreliyse endişelenmeyin! Birkaç basit bilgi verdiğinizde yapay zeka oyunun motorunu ve şifresini araştırır."/>
+                    </StackPanel>
+
+                    <!-- Hızlı AI Motoru Seçimi -->
+                    <Border Grid.Column="1" Background="#14FFFFFF" CornerRadius="6" Padding="8,4" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="⚡ AI:" Classes="caption" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            <ComboBox Name="ProviderComboBox"
+                                      Width="160"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Mod Seçici (Kolay / Gelişmiş) -->
+                <Border Classes="card" Padding="8">
+                    <Grid ColumnDefinitions="*,*">
+                        <RadioButton Name="EasyModeRadio"
+                                     GroupName="ModeGroup"
+                                     Content="🟢  Kolay Mod (3 Basit Soru — Önerilen)"
+                                     IsChecked="True"
+                                     IsCheckedChanged="OnModeChanged"
+                                     VerticalAlignment="Center"
+                                     Margin="8,4"/>
+                        <RadioButton Grid.Column="1"
+                                     Name="AdvancedModeRadio"
+                                     GroupName="ModeGroup"
+                                     Content="🔵  Gelişmiş Mod (Teknik &amp; Modder)"
+                                     IsChecked="False"
+                                     IsCheckedChanged="OnModeChanged"
+                                     VerticalAlignment="Center"
+                                     Margin="8,4"/>
+                    </Grid>
+                </Border>
+
+                <!-- 1. KOLAY MOD GİRİŞ KARTI (3 Basit Soru) -->
+                <Border Name="EasyModeCard" Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="heading" Text="🎮 3 Basit Bilgi Verin"/>
+
+                        <!-- Soru 1: Oyun Adı -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="caption" Text="1. Oyunun Tam İsmi Nedir? (Zorunlu)" FontWeight="SemiBold"/>
+                            <TextBox Name="GameNameTextBox"
+                                     PlaceholderText="Örn: Silent Hill 2, Hogwarts Legacy, Stalker 2, Tekken 8"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <!-- Soru 2: Stüdyo -->
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Classes="caption" Text="2. Hangi Şirket/Stüdyo Yaptı? (Opsiyonel)" FontWeight="SemiBold"/>
+                                <TextBox Name="DeveloperTextBox"
+                                         PlaceholderText="Örn: Bloober Team, Avalanche, Konami"/>
+                            </StackPanel>
+
+                            <!-- Soru 3: Çıkış Yılı -->
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="caption" Text="3. Oyun Hangi Yıl Çıktı? (Opsiyonel)" FontWeight="SemiBold"/>
+                                <TextBox Name="YearTextBox"
+                                         PlaceholderText="Örn: 2024, 2023"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Button Name="SearchButton"
+                                Content="🔍  Yapay Zeka ile Motor &amp; Şifreyi Araştır"
+                                Classes="accent"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,10"
+                                Click="OnSearchClick"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. GELİŞMİŞ MOD GİRİŞ KARTI -->
+                <Border Name="AdvancedModeCard" Classes="card" IsVisible="False">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="heading" Text="🛠️ Gelişmiş Teknik Parametreler"/>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="caption" Text="Oyun Adı &amp; Versiyon:" FontWeight="SemiBold"/>
+                            <TextBox Name="AdvGameNameTextBox" PlaceholderText="Örn: Hogwarts Legacy Deluxe Edition"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Classes="caption" Text="Tahmini Motor:" FontWeight="SemiBold"/>
+                                <TextBox Name="EngineHintTextBox" PlaceholderText="Örn: Unreal Engine 5.1 / 4.27"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="caption" Text="Geliştirici / Yayıncı:" FontWeight="SemiBold"/>
+                                <TextBox Name="AdvDeveloperTextBox" PlaceholderText="Örn: Avalanche / Warner Bros"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Button Content="🔍  Gelişmiş AI Analizini Başlat"
+                                Classes="accent"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,10"
+                                Click="OnSearchClick"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Yükleniyor Göstergesi -->
+                <ProgressBar Name="LoadingBar" IsIndeterminate="True" IsVisible="False" Height="4"/>
+
+                <!-- AI Sonuç Kartı -->
+                <Border Name="ResultCard" Classes="card" IsVisible="False">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="✨" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Classes="heading" Text="Yapay Zeka Analiz Sonucu" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Tespit Edilen Motor -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" VerticalAlignment="Center">
+                            <TextBlock Classes="caption" Text="Tespit Edilen Oyun Motoru:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Border Grid.Column="1" Background="#2A2A2A" CornerRadius="6" Padding="10,4" HorizontalAlignment="Left">
+                                <TextBlock Name="EngineText" Classes="caption" FontWeight="Bold" Foreground="{DynamicResource AccentHoverBrush}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Bulunan Anahtar Varsa (Yeşil Kutucuk) -->
+                        <Border Name="FoundKeyPanel" Background="#163821" BorderBrush="#2E7D32" BorderThickness="1" CornerRadius="8" Padding="14" IsVisible="False">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="🎉 Bilinen Şifre (AES Anahtarı) Başarıyla Bulundu!" FontWeight="Bold" Foreground="#4CAF50"/>
+                                <TextBox Name="FoundKeyTextBox" FontFamily="Consolas, monospace" FontSize="12" IsReadOnly="True"/>
+                                <Button Content="✅  Bu Şifreyi Otomatik Uygula ve Paketi Aç"
+                                        Classes="success"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Click="OnApplyFoundKeyClick"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Kolay Arama Tavsiyesi / Yönlendirme -->
+                        <Border Background="#1F1F1F" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="💡 Yapay Zeka Tavsiyesi &amp; Rehber:" FontWeight="SemiBold" Classes="caption"/>
+                                <TextBlock Name="AdviceText" Classes="body" TextWrapping="Wrap"/>
+
+                                <Button Name="OpenBrowserSearchButton"
+                                        Content="🌐  Google &amp; CS.RIN.RU'da Tek Tıkla Ara"
+                                        Classes="secondary"
+                                        HorizontalAlignment="Left"
+                                        Click="OnOpenBrowserSearchClick"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Manuel Anahtar Giriş ve Uygulama -->
+                        <StackPanel Spacing="6" Margin="0,4,0,0">
+                            <TextBlock Classes="caption" Text="Bulduğunuz Şifreyi Buraya Yapıştırıp Paketi Açabilirsiniz:" FontWeight="SemiBold"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Name="ManualKeyTextBox" PlaceholderText="0x... (AES Anahtarı)"/>
+                                <Button Grid.Column="1"
+                                        Content="🔓  Uygula ve Paketi Aç"
+                                        Classes="accent"
+                                        Click="OnApplyManualKeyClick"/>
+                            </Grid>
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Alt Kapat Butonu -->
+        <Border Grid.Row="1" Margin="0,14,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0">
+            <Button Content="Kapat"
+                    Classes="secondary"
+                    HorizontalAlignment="Right"
+                    Padding="24,6"
+                    Click="OnCloseClick"/>
+        </Border>
+
+    </Grid>
+</Window>

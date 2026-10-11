@@ -1,0 +1,574 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        x:Class="LocalizePak.UI.Views.SettingsWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Ayarlar &amp; AI Motorları — GLS (WinUI 3)"
+        Icon="/Assets/glslogo.ico"
+        Width="820" Height="720"
+        MinWidth="700" MinHeight="560"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20,16">
+
+        <!-- ─── 1. BAŞLIK ─── -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="4,0,0,14">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Border Background="#20FFFFFF" CornerRadius="8" Width="34" Height="34" VerticalAlignment="Center">
+                    <TextBlock Text="⚙️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="Uygulama &amp; AI Ayarları" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="AI motorlarını, API anahtarlarını, dilleri ve yerel modelleri yapılandırın." FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- ─── 2. SEKMELİ AYARLAR ALANI (TABCONTROL) ─── -->
+        <TabControl Grid.Row="1" Background="Transparent">
+
+            <!-- ═════════ SEKME 1: GENEL & ÇEVİRİ TERCİHLERİ ═════════ -->
+            <TabItem Header="⚙️  Genel Tercihler">
+                <ScrollViewer Margin="0,12,0,0">
+                    <StackPanel Spacing="12">
+
+                        <!-- Uygulama Arayüz Dili -->
+                        <Border Classes="settings-card">
+                            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="🌐 Uygulama Arayüz Dili"/>
+                                    <TextBlock Classes="caption" Text="Programın genel menü ve arayüz dil tercihi (Türkçe, English, Русский, 简体中文)."/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{x:Static vm:MainViewModel.AppLanguageOptions}"
+                                          SelectedItem="{Binding SelectedAppLanguage}"
+                                          Width="240"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Aktif AI Motoru Seçimi -->
+                        <Border Classes="settings-card">
+                            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="Aktif Çeviri Motoru"/>
+                                    <TextBlock Classes="caption" Text="Çeviri ve analiz işlemlerinde varsayılan olarak kullanılacak yapay zeka servisini seçin."/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{x:Static vm:MainViewModel.ProviderNames}"
+                                          SelectedItem="{Binding SelectedProviderName}"
+                                          Width="240"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Varsayılan X-to-X Diller -->
+                        <Border Classes="settings-card">
+                            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="Varsayılan Çeviri Dilleri (X ➔ X)"/>
+                                    <TextBlock Classes="caption" Text="Kaynak dil ve hedef yerelleştirme dili."/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.SourceLanguages}"
+                                              SelectedItem="{Binding SelectedSourceLanguage}"
+                                              Width="130"/>
+                                    <TextBlock Text="➔" FontSize="14" VerticalAlignment="Center" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                    <ComboBox ItemsSource="{x:Static vm:MainViewModel.TargetLanguages}"
+                                              SelectedItem="{Binding SelectedTargetLanguage}"
+                                              Width="130"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- AI Düşünme / Akıl Yürütme Seviyesi Kartı -->
+                        <Border Classes="settings-card">
+                            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="🧠 AI Düşünme / Akıl Yürütme Modu (Reasoning Effort)"/>
+                                    <TextBlock Classes="caption" Text="OpenAI (o/GPT-6), Claude Thinking, Gemini ve DeepSeek modellerinin deyimler ve edebiyat için düşünme bütçesi."/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{x:Static vm:MainViewModel.ReasoningEffortOptions}"
+                                          SelectedItem="{Binding SelectedReasoningEffort}"
+                                          Width="240"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Çeviri Belleği (TM) & Sıfırlama -->
+                        <Border Classes="settings-card">
+                            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="Çeviri Belleği (Translation Memory / TM)"/>
+                                    <TextBlock Classes="caption" Text="Önceden çevrilmiş birebir aynı cümleleri hafızada tutup API kotası harcamadan otomatik uygular."/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <ToggleSwitch IsChecked="{Binding EnableTranslationMemory}"
+                                                  OnContent="Açık" OffContent="Kapalı"/>
+                                    <Button Content="🗑️ Hafızayı Sıfırla" Classes="secondary"
+                                            Command="{Binding ClearTranslationMemoryCommand}"
+                                            Padding="10,5" FontSize="11"
+                                            ToolTip.Tip="Kaydedilmiş tüm çeviri belleğini tamamen temizler."/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═════════ SEKME 2: BULUT AI MOTORLARI & API ANAHTARLARI (AÇILIR EXPANDER KARTLARI) ═════════ -->
+            <TabItem Header="🤖  Bulut AI Sağlayıcıları (API)">
+                <ScrollViewer Margin="0,12,0,0">
+                    <StackPanel Spacing="10">
+
+                        <TextBlock Classes="caption"
+                                   Text="Aşağıdaki AI servislerinin API anahtarlarını ve modellerini yapılandırabilirsiniz. Kartlara tıklayarak detayları açıp kapatabilirsiniz."
+                                   Margin="2,0,0,4"/>
+
+                        <!-- 1. OpenRouter (Hepsi Bir Arada Gateway) -->
+                        <Expander IsExpanded="True" Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🚀" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="OpenRouter (openrouter.ai) — Hepsi Bir Arada"/>
+                                        <TextBlock Classes="caption" Text="Tek API anahtarıyla Gemini, DeepSeek, Claude, Llama, OpenAI ve Qwen erişimi."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.OpenRouterModels}"
+                                              SelectedItem="{Binding OpenRouterModel}"
+                                              Width="240"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="OpenRouter API Anahtarı (openrouter.ai/keys):"/>
+                                <TextBox PlaceholderText="sk-or-v1-... (OpenRouter API Anahtarı)"
+                                         Text="{Binding OpenRouterApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 2. Together AI (Çoklu Açık Kaynak Gateway) -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🌐" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Together AI (together.ai) — Çoklu Açık Kaynak"/>
+                                        <TextBlock Classes="caption" Text="Llama 3.3 Turbo, DeepSeek V3/R1, Qwen 2.5 72B ve Mistral modelleri."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.TogetherAiModels}"
+                                              SelectedItem="{Binding TogetherModel}"
+                                              Width="240"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Together AI API Anahtarı (api.together.xyz):"/>
+                                <TextBox PlaceholderText="... (Together AI API Anahtarı)"
+                                         Text="{Binding TogetherApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 3. Mistral AI (Resmi API) -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🌪️" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Mistral AI (mistral.ai) — Resmi Motor"/>
+                                        <TextBlock Classes="caption" Text="Mistral Large, Mistral Small, Codestral ve Ministral modelleri."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.MistralModels}"
+                                              SelectedItem="{Binding MistralModel}"
+                                              Width="240"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Mistral Console API Anahtarı (console.mistral.ai):"/>
+                                <TextBox PlaceholderText="... (Mistral API Anahtarı)"
+                                         Text="{Binding MistralApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 4. DeepInfra (Ekonomik Açık Kaynak) -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="⚡" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="DeepInfra (deepinfra.com) — Ekonomik Havuz"/>
+                                        <TextBlock Classes="caption" Text="Llama 3.1 70B, DeepSeek V3, Qwen 2.5 72B uygun fiyatlı sunucuları."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.DeepInfraModels}"
+                                              SelectedItem="{Binding DeepInfraModel}"
+                                              Width="240"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="DeepInfra API Anahtarı (deepinfra.com/dash/api_keys):"/>
+                                <TextBox PlaceholderText="... (DeepInfra API Anahtarı)"
+                                         Text="{Binding DeepInfraApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 5. Perplexity AI -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🔮" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Perplexity AI (perplexity.ai) — Muhakeme"/>
+                                        <TextBlock Classes="caption" Text="Sonar Pro ve Sonar modelleriyle gerçek zamanlı doğrulama."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.PerplexityModels}"
+                                              SelectedItem="{Binding PerplexityModel}"
+                                              Width="240"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Perplexity API Anahtarı (perplexity.ai/settings/api):"/>
+                                <TextBox PlaceholderText="pplx-... (Perplexity API Anahtarı)"
+                                         Text="{Binding PerplexityApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 2. Google Gemini Kartı -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="✨" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Google Gemini (Yüksek Kota &amp; Hızlı)"/>
+                                        <TextBlock Classes="caption" Text="Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.GeminiModels}"
+                                              SelectedItem="{Binding GeminiModel}"
+                                              Width="220"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Google AI Studio API Anahtarı (aistudio.google.com):"/>
+                                <TextBox PlaceholderText="AIzaSy... (Gemini API Anahtarı)"
+                                         Text="{Binding GeminiApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 3. Groq Cloud Kartı -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="⚡" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Groq Cloud (Ücretsiz &amp; Süper Hızlı)"/>
+                                        <TextBlock Classes="caption" Text="GPT-OSS 120B / GPT-OSS 20B / Qwen 3.8 / Compound"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.GroqModels}"
+                                              SelectedItem="{Binding GroqModel}"
+                                              Width="220"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Groq Cloud API Anahtarı (console.groq.com):"/>
+                                <TextBox PlaceholderText="gsk_... (Groq API Anahtarı)"
+                                         Text="{Binding GroqApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 4. Anthropic Claude Kartı -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🎭" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Anthropic Claude (Edebi &amp; Doğal)"/>
+                                        <TextBlock Classes="caption" Text="Claude Sonnet 5.5 / Haiku 5.5 / Opus 5.5 / 3.7 Sonnet"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.ClaudeModels}"
+                                              SelectedItem="{Binding ClaudeModel}"
+                                              Width="220"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="Anthropic Console API Anahtarı:"/>
+                                <TextBox PlaceholderText="sk-ant-... (Anthropic API Anahtarı)"
+                                         Text="{Binding ClaudeApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 5. OpenAI Kartı -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🧠" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="OpenAI GPT"/>
+                                        <TextBlock Classes="caption" Text="GPT-6.1 Sol / GPT-6 Astra / GPT-6 Luna / GPT-4o"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.OpenAiModels}"
+                                              SelectedItem="{Binding OpenAiModel}"
+                                              Width="200"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="OpenAI Platform API Anahtarı (platform.openai.com):"/>
+                                <TextBox PlaceholderText="sk-... (OpenAI API Anahtarı)"
+                                         Text="{Binding OpenAiApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 6. DeepSeek Kartı -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🐋" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="DeepSeek (Resmi API)"/>
+                                        <TextBlock Classes="caption" Text="DeepSeek Chat V3 / DeepSeek Reasoner R1"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2"
+                                              ItemsSource="{x:Static vm:MainViewModel.DeepSeekModels}"
+                                              SelectedItem="{Binding DeepSeekModel}"
+                                              Width="200"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="6" Margin="0,8,0,4">
+                                <TextBlock Classes="caption" Text="DeepSeek Platform API Anahtarı (platform.deepseek.com):"/>
+                                <TextBox PlaceholderText="sk-... (DeepSeek API Anahtarı)"
+                                         Text="{Binding DeepSeekApiKey}"
+                                         PasswordChar="•"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 7. Kimi & Qwen Kartları -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🌙" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Kimi (Moonshot) &amp; Qwen (DashScope)"/>
+                                        <TextBlock Classes="caption" Text="Geniş bağlamlı Çin ve Asya dil modelleri."/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Classes="caption" Text="Yapılandır ▼" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="10" Margin="0,8,0,4">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox Grid.Column="0" PlaceholderText="sk-... (Moonshot Kimi API Anahtarı)" Text="{Binding KimiApiKey}" PasswordChar="•"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.KimiModels}" SelectedItem="{Binding KimiModel}" Width="180"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox Grid.Column="0" PlaceholderText="sk-... (DashScope Qwen API Anahtarı)" Text="{Binding QwenApiKey}" PasswordChar="•"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.QwenModels}" SelectedItem="{Binding QwenModel}" Width="180"/>
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 8. Özel / Yerel LLM Uç Noktası -->
+                        <Expander Classes="settings-card" Margin="0,0,0,4">
+                            <Expander.Header>
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Width="680">
+                                    <TextBlock Grid.Column="0" Text="🦙" FontSize="16" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Classes="body" FontWeight="Bold" Text="Özel API / Yerel LLM (LM Studio, vLLM, Özel Sunucu)"/>
+                                        <TextBlock Classes="caption" Text="OpenAI uyumlu özel HTTP endpoint."/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Classes="caption" Text="Uç Nokta ▼" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Expander.Header>
+                            <StackPanel Spacing="8" Margin="0,8,0,4">
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <TextBox Grid.Column="0" Text="{Binding CustomEndpointUrl}" PlaceholderText="http://localhost:11434/v1"/>
+                                    <TextBox Grid.Column="1" Text="{Binding CustomEndpointApiKey}" PlaceholderText="API Key (Gerekiyorsa)" PasswordChar="•"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox Grid.Column="0" Text="{Binding CustomEndpointModel}" PlaceholderText="Model Kimliği (örn: llama3)"/>
+                                    <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:MainViewModel.OllamaModels}" SelectedItem="{Binding CustomEndpointModel}" Width="160"/>
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═════════ SEKME 3: YEREL AI KURULUM MERKEZİ (OLLAMA HUB) ═════════ -->
+            <TabItem Header="📥  Yerel AI Hub (Ollama)">
+                <ScrollViewer Margin="0,12,0,0">
+                    <StackPanel Spacing="14">
+
+                        <!-- Bilgi Banner'ı -->
+                        <Border Classes="card" Background="#242830" BorderBrush="#3B4252" BorderThickness="1" CornerRadius="8" Padding="14">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <TextBlock Grid.Column="0" Text="📥" FontSize="26" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock Classes="body" FontWeight="Bold" FontSize="14" Text="Yerel AI Modeli İndir &amp; Kur (Ollama Hub)"/>
+                                    <TextBlock Classes="caption" Text="{Binding OllamaStatusText}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Button Content="🔄 Durumu Kontrol Et" Classes="secondary"
+                                            Command="{Binding CheckOllamaStatusCommand}"
+                                            IsEnabled="{Binding !IsCheckingOllama}"
+                                            Padding="10,6" FontSize="11"/>
+                                    <Button Content="🌐 Ollama İndir (ollama.com)" Classes="secondary"
+                                            Command="{Binding OpenOllamaWebsiteCommand}"
+                                            Padding="10,6" FontSize="11"
+                                            ToolTip.Tip="Bilgisayarınızda Ollama kurulu değilse ollama.com adresinden ücretsiz kurabilirsiniz."/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Model Seçici & Detay Kartı -->
+                        <Border Background="#1C1F26" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="İndirmek veya Güncellemek İstediğiniz Yerel Modeli Seçin:" FontWeight="SemiBold" FontSize="12"/>
+
+                                <ComboBox ItemsSource="{x:Static vm:MainViewModel.PresetLocalAiModels}"
+                                          SelectedItem="{Binding SelectedLocalAiModel}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <TextBlock Grid.Column="0" Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Tier}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding SizeInfo}" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <!-- Seçili Model Bilgi Paneli -->
+                                <Border Background="#14171E" CornerRadius="6" Padding="12,10">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <TextBlock Text="💻 Donanım Gereksinimi:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SelectedLocalAiModel.HardwareRequirement}" FontSize="12" Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <TextBlock Text="📦 Model İndirme Boyutu:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SelectedLocalAiModel.SizeInfo}" FontSize="12"/>
+                                        </Grid>
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <TextBlock Text="🎯 Kullanım Amacı:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SelectedLocalAiModel.Description}" FontSize="12" TextWrapping="Wrap"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- İndirme Aksiyonu & İlerleme -->
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ModelDownloadStatusMessage}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                        <TextBlock Text="{Binding ModelDownloadDetail}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <Button Content="⛔ İptal Et" Classes="danger"
+                                                Command="{Binding CancelModelInstallCommand}"
+                                                IsVisible="{Binding IsModelDownloading}"
+                                                Padding="12,8"/>
+                                        <Button Content="🚀 Modeli İndir ve Kur" Classes="accent"
+                                                Command="{Binding InstallSelectedLocalModelCommand}"
+                                                IsEnabled="{Binding !IsModelDownloading}"
+                                                Padding="16,8" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- İndirme İlerleme Çubuğu -->
+                                <ProgressBar Value="{Binding ModelDownloadPercentage}" Maximum="100" Height="8"
+                                             IsVisible="{Binding IsModelDownloading}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Başarı Bilgi Kutusu -->
+                        <Border Classes="infobar-success" IsVisible="{Binding ShowModelInstructions}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="🎉 Tebrikler! Model Kuruldu ve Aktif Motor Yapıldı" FontWeight="Bold" FontSize="13" Foreground="#4CAF50"/>
+                                <TextBlock Text="{Binding InstalledModelSuccessName, StringFormat='{}Artık &quot;{0}&quot; modeli üzerinden internete ve API kotasına ihtiyaç duymadan tamamen çevrimdışı yerelleştirme yapabilirsiniz.'}" FontSize="11" Foreground="#C8E6C9" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═════════ SEKME 4: SİSTEM PROMPTU & TALİMATLAR ═════════ -->
+            <TabItem Header="📝  Prompt Şablonu">
+                <ScrollViewer Margin="0,12,0,0">
+                    <StackPanel Spacing="12">
+                        <Border Classes="settings-card">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Classes="body" FontWeight="SemiBold" Text="Ana Sistem Çeviri Promptu"/>
+                                        <TextBlock Classes="caption" Text="Tüm AI motorlarına gönderilen rol ve yerelleştirme talimatı. Aşağıdaki kutudan özgürce düzenleyebilirsiniz."/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{x:Static vm:MainViewModel.PromptLanguageOptions}"
+                                              SelectedItem="{Binding SelectedPromptLanguage}"
+                                              Width="140"
+                                              ToolTip.Tip="Hazır Master Prompt Şablon Dili (Türkçe, İngilizce, Rusça, Çince)"/>
+                                    <Button Grid.Column="2" Content="📋 Şablonu Yükle" Classes="accent"
+                                            Command="{Binding LoadPromptTemplateForSelectedLanguageCommand}"
+                                            Padding="10,4" FontSize="11"
+                                            ToolTip.Tip="Seçilen dilin optimize edilmiş Master Prompt şablonunu metin kutusuna yükler."/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                                    <TextBlock Grid.Column="0" Classes="caption" Text="💡 İpucu: Şablon yüklendikten sonra metin üzerinde dilediğiniz özel kuralları ekleyip çıkarabilirsiniz."/>
+                                    <Button Grid.Column="1" Content="🔄 Fabrika Ayarına Sıfırla" Classes="secondary"
+                                            Command="{Binding ResetSystemPromptToDefaultCommand}"
+                                            Padding="10,4" FontSize="11"/>
+                                </Grid>
+                                <TextBox Text="{Binding SystemPrompt}"
+                                         AcceptsReturn="True"
+                                         Height="380"
+                                         FontSize="12"
+                                         FontFamily="Cascadia Code, Consolas, monospace"
+                                         TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- ─── 3. ALT EYLEM ÇUBUĞU (KAYDET & KAPAT) ─── -->
+        <Border Grid.Row="2" Margin="0,14,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" Classes="caption"/>
+                <Button Grid.Column="1" Content="İptal" Classes="secondary" Click="OnCancelClick" Margin="0,0,10,0" Padding="16,7"/>
+                <Button Grid.Column="2" Content="💾  Ayarları Kaydet" Classes="accent" Click="OnSaveClick" Padding="20,7" FontWeight="SemiBold"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

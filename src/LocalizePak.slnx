@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/LocalizePak.Tests/LocalizePak.Tests.csproj" />
+  </Folder>
+  <Project Path="LocalizePak.Core/LocalizePak.Core.csproj" />
+  <Project Path="LocalizePak.IO/LocalizePak.IO.csproj" />
+  <Project Path="LocalizePak.Translation/LocalizePak.Translation.csproj" />
+  <Project Path="LocalizePak.UI/LocalizePak.UI.csproj" />
+</Solution>
