@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=GameLocalizationSystem
+GenericName=Game Localization & PAK Editor
+Comment=AI-powered game localization and PAK/Locres editing suite
+Exec=GLS
+Icon=glslogo
+Terminal=false
+Type=Application
+Categories=Development;Utility;Translation;
+StartupWMClass=GLS
+Keywords=Game;Localization;Translation;Unreal;PAK;Locres;AI;
