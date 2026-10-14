@@ -51,7 +51,9 @@ read/
 docs/oku.txt
 docs/README.md
 docs/GLS_v1_Paket/
+docs/Alper_Paketi/
 docs/Araştırma/
+Alper_Paketi/
 *.pdf
 
 # --- Large Game Files & Binary Assets (Do NOT commit to git) ---
