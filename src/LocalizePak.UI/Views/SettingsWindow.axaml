@@ -1,9 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:loc="using:LocalizePak.UI.Localization"
         x:Class="LocalizePak.UI.Views.SettingsWindow"
         x:DataType="vm:MainViewModel"
-        Title="Ayarlar &amp; AI Motorları — GLS (WinUI 3)"
+        Title="{loc:Loc Settings_Title}"
         Icon="/Assets/glslogo.ico"
         Width="820" Height="720"
         MinWidth="700" MinHeight="560"
@@ -20,8 +21,8 @@
                     <TextBlock Text="⚙️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="Uygulama &amp; AI Ayarları" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <TextBlock Text="AI motorlarını, API anahtarlarını, dilleri ve yerel modelleri yapılandırın." FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <TextBlock Text="{loc:Loc Settings_Header}" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="{loc:Loc Settings_SubHeader}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
@@ -30,7 +31,7 @@
         <TabControl Grid.Row="1" Background="Transparent">
 
             <!-- ═════════ SEKME 1: GENEL & ÇEVİRİ TERCİHLERİ ═════════ -->
-            <TabItem Header="⚙️  Genel Tercihler">
+            <TabItem Header="{loc:Loc Settings_Tab_General}">
                 <ScrollViewer Margin="0,12,0,0">
                     <StackPanel Spacing="12">
 
@@ -38,8 +39,8 @@
                         <Border Classes="settings-card">
                             <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="🌐 Uygulama Arayüz Dili"/>
-                                    <TextBlock Classes="caption" Text="Programın genel menü ve arayüz dil tercihi (Türkçe, English, Русский, 简体中文)."/>
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="{loc:Loc Settings_AppLanguage}"/>
+                                    <TextBlock Classes="caption" Text="{loc:Loc Settings_AppLanguage_Desc}"/>
                                 </StackPanel>
                                 <ComboBox Grid.Column="1"
                                           ItemsSource="{x:Static vm:MainViewModel.AppLanguageOptions}"
@@ -53,8 +54,8 @@
                         <Border Classes="settings-card">
                             <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="Aktif Çeviri Motoru"/>
-                                    <TextBlock Classes="caption" Text="Çeviri ve analiz işlemlerinde varsayılan olarak kullanılacak yapay zeka servisini seçin."/>
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="{loc:Loc Settings_ActiveEngine}"/>
+                                    <TextBlock Classes="caption" Text="{loc:Loc Settings_ActiveEngine_Desc}"/>
                                 </StackPanel>
                                 <ComboBox Grid.Column="1"
                                           ItemsSource="{x:Static vm:MainViewModel.ProviderNames}"
@@ -68,8 +69,8 @@
                         <Border Classes="settings-card">
                             <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="Varsayılan Çeviri Dilleri (X ➔ X)"/>
-                                    <TextBlock Classes="caption" Text="Kaynak dil ve hedef yerelleştirme dili."/>
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="{loc:Loc Settings_DefaultLanguages}"/>
+                                    <TextBlock Classes="caption" Text="{loc:Loc Settings_DefaultLanguages_Desc}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                     <ComboBox ItemsSource="{x:Static vm:MainViewModel.SourceLanguages}"
@@ -87,8 +88,8 @@
                         <Border Classes="settings-card">
                             <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="🧠 AI Düşünme / Akıl Yürütme Modu (Reasoning Effort)"/>
-                                    <TextBlock Classes="caption" Text="OpenAI (o/GPT-6), Claude Thinking, Gemini ve DeepSeek modellerinin deyimler ve edebiyat için düşünme bütçesi."/>
+                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="{loc:Loc Settings_ReasoningEffort}"/>
+                                    <TextBlock Classes="caption" Text="{loc:Loc Settings_ReasoningEffort_Desc}"/>
                                 </StackPanel>
                                 <ComboBox Grid.Column="1"
                                           ItemsSource="{x:Static vm:MainViewModel.ReasoningEffortOptions}"
@@ -609,8 +610,8 @@
         <Border Grid.Row="2" Margin="0,14,0,0" Padding="0,8,0,0" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center" Classes="caption"/>
-                <Button Grid.Column="1" Content="İptal" Classes="secondary" Click="OnCancelClick" Margin="0,0,10,0" Padding="16,7"/>
-                <Button Grid.Column="2" Content="💾  Ayarları Kaydet" Classes="accent" Click="OnSaveClick" Padding="20,7" FontWeight="SemiBold"/>
+                <Button Grid.Column="1" Content="{loc:Loc Settings_Btn_Cancel}" Classes="secondary" Click="OnCancelClick" Margin="0,0,10,0" Padding="16,7"/>
+                <Button Grid.Column="2" Content="{loc:Loc Settings_Btn_Save}" Classes="accent" Click="OnSaveClick" Padding="20,7" FontWeight="SemiBold"/>
             </Grid>
         </Border>
 

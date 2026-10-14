@@ -276,6 +276,11 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private string _selectedAppLanguage = "Türkçe";
 
+    partial void OnSelectedAppLanguageChanged(string value)
+    {
+        LocalizePak.UI.Localization.LocalizationService.Instance.SetLanguage(value);
+    }
+
     public static IReadOnlyList<string> PromptLanguageOptions { get; } =
         ["Türkçe", "English", "Русский", "简体中文"];
 

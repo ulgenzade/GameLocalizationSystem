@@ -59,16 +59,21 @@ Lütfen ayrıntılı dokümantasyonu görüntülemek için tercih ettiğiniz dil
 - Oyun diyaloglarındaki format kodlarını (`{0}`, `%s`, `{PlayerName}`, `\n`, `\t`, `<color>`, `</color>`, `[b]`, `[/b]`) regex tabanlı geçici belirteçlerle (`[VAR_0]`, `[TAG_0]`) korur; çeviri sonrasında bayt hassasiyetiyle eski yerine yerleştirir.
 - Oyunların çökmesini (crash) ve değişken bozulmalarını %100 engeller.
 
-### 4. 🌐 Çok Dilli Master Sistem Promptu & Dil Ayarları
-- **Desteklenen Diller:** **Türkçe**, **English (İngilizce)**, **Русский (Rusça)** ve **简体中文 (Çince)**.
-- Her hedef dil için özel karakter analizi, argo/sokak dili, soylu/saray hitapları ve eşya/yetenek tutarlılığı kurallarını içeren hazır şablonlar.
+### 4. 🌐 4 Dilde Tam Arayüz (UI) & Edebi Master Prompt Desteği
+- **Desteklenen Diller:** **Türkçe (TR)**, **English (EN)**, **Русский (RU)** ve **简体中文 (ZH)**.
+- **Dinamik Çok Dilli Arayüz (UI):** Menüler, tablolar, butonlar ve ayar pencereleri tek tıkla canlı olarak Türkçe, İngilizce, Rusça veya Çinceye geçer.
+- **Özel Edebi Master Sistem Promptları:** Her hedef dil için özel karakter ve persona analizi, sokak argosu, asil/saray hitapları ve eşya/büyü tutarlılığı kurallarını içeren 4 ayrı yerel dilde şablon.
 - Kullanıcılar prompt şablonunu dilediği dilde yükleyebilir ve arayüz üzerinden özgürce düzenleyebilir.
 
-### 5. 🗂️ Oyun Motoru & Arşiv Desteği
-- **Unreal Engine:** `.pak` (V1 - V11+) ve `.locres` (V1, V2, V3) ikili lokalizasyon tabloları.
+### 5. 🗂️ Evrensel Oyun Motoru & Arşiv Desteği
+- **Unreal Engine:** `.pak` (V1 - V11+) ve `.locres` (V1, V2, V3) ikili lokalizasyon tabloları, AES-256 şifre çözme & şifreleme, Oodle/LZ4/Zlib.
 - **Larian Studios (Divinity / Baldur's Gate):** `.pak` (LSPak V7 - V18) ve XML diyalog ağaçları.
+- **Godot Engine:** `.pck` / `.pak` (V1 & V2) paketleri, AES-256 şifreleme ve Zstandard/Raw sıkıştırma.
+- **Unity Engine:** `.pak` isimli UnityFS / UnityWeb AssetBundle arşivleri (LZ4/LZMA).
+- **CryEngine / Lumberyard:** CryEngine ZIP (`PK\x03\x04`) diyalog arşivleri.
+- **Classic ID Tech / Quake / GoldSrc:** 12-byte header `PACK` arşivleri.
 - **Evrensel Formatlar:** `.json`, `.csv`, `.tsv`, `.po` ve düz metin dosyaları.
-- **Orijinal Dosya Koruması:** Arşiv içerisindeki fontlar, sesler ve dokunulmayan ikili varlıklar bayt bayt korunarak yama paketi üretilir.
+- **Orijinal Dosya Koruması:** Arşiv içerisindeki fontlar, sesler ve dokunulmayan ikili varlıklar bayt bayt korunarak yama paketi (`_P.pak`) üretilir.
 
 ### 6. 📊 Kalite Kontrol (QA) & İstatistik Paneli
 - **Eksik Değişken & Etiket Taraması (F7):** Unutulan değişkenleri tespit eder ve tek tıkla otomatik onarır.
@@ -140,7 +145,7 @@ chmod +x scripts/build-linux.sh
 
 | Kısayol | İşlev |
 | :--- | :--- |
-| **F5** | Çevirileri baştan başlat |
+| **F5 / Ctrl + Enter** | Çevirileri başlat / durdur |
 | **F6** | Kaldığı yerden devam et |
 | **F7** | Kalite Kontrolü (QA) çalıştır |
 | **Esc** | Aktif çeviriyi durdur |
@@ -201,16 +206,21 @@ chmod +x scripts/build-linux.sh
 - Automatically masks in-game code variables (`{0}`, `%s`, `{PlayerName}`, `\n`, `\t`, `<color>`, `</color>`, `[b]`, `[/b]`) with temporary tokens (`[VAR_0]`, `[TAG_0]`) before passing strings to LLMs.
 - Restores them post-translation with byte-exact precision, preventing game engine crashes and syntax corruption.
 
-### 4. 🌐 Multilingual Master System Prompts & App Localization
-- **Supported Languages:** **Turkish**, **English**, **Russian**, and **Simplified Chinese**.
-- Curated prompt templates tailored for dialect nuances, street slang, royal decorum, item consistency, and gender markers.
-- Prompts can be customized, edited, and saved per project in the settings.
+### 4. 🌐 Full 4-Language UI & Literary Master System Prompts
+- **Supported Languages:** **Turkish (TR)**, **English (EN)**, **Russian (RU)**, and **Simplified Chinese (ZH)**.
+- **Dynamic Multilingual UI:** Menus, DataGrid columns, buttons, and settings seamlessly switch in real-time between Turkish, English, Russian, and Simplified Chinese.
+- **Curated Literary Master Prompts:** Tailored system prompt templates in each of the 4 native languages covering character personas, street slang, royal decorum, item consistency, and format preservation.
+- Prompts can be customized, edited, and saved per project in settings.
 
-### 5. 🗂️ Game Engine & Archive Support
-- **Unreal Engine:** `.pak` (Versions 1 through 11+) and binary `.locres` (V1, V2, V3) string tables.
+### 5. 🗂️ Universal Game Engine & Archive Support
+- **Unreal Engine:** `.pak` (V1 through V11+) and binary `.locres` (V1, V2, V3) string tables, AES-256 encryption/decryption, Oodle/LZ4/Zlib.
 - **Larian Studios (Divinity / Baldur's Gate):** `.pak` (LSPak V7 through V18) and XML dialogue trees.
+- **Godot Engine:** `.pck` / `.pak` (V1 & V2) archives, AES-256 decryption, and Zstandard/Raw decompression.
+- **Unity Engine:** `.pak`-named UnityFS / UnityWeb AssetBundle packages (LZ4/LZMA).
+- **CryEngine / Lumberyard:** CryEngine ZIP (`PK\x03\x04`) localization archives.
+- **Classic ID Tech / Quake / GoldSrc:** 12-byte header `PACK` archives.
 - **Universal Formats:** `.json`, `.csv`, `.tsv`, `.po`, and raw plain-text.
-- **Asset Integrity:** Preserves fonts, textures, audio, and untouched binary entries byte-for-byte in repacked mod archives.
+- **Asset Integrity:** Preserves untouched fonts, textures, and audio byte-for-byte in repacked mod archives (`_P.pak`).
 
 ### 6. 📊 Quality Assurance (QA) & Telemetry
 - **Missing Variable & Tag Audit (F7):** Flags missed or altered variable tags and provides 1-click auto-repair.
@@ -282,7 +292,7 @@ chmod +x scripts/build-linux.sh
 
 | Shortcut | Action |
 | :--- | :--- |
-| **F5** | Start translation from the beginning |
+| **F5 / Ctrl + Enter** | Start / stop translation |
 | **F6** | Resume translation from where it stopped |
 | **F7** | Run Quality Assurance (QA) inspection |
 | **Esc** | Abort active translation task |

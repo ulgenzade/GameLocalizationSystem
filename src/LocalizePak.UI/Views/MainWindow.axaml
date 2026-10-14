@@ -1,13 +1,14 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:loc="using:LocalizePak.UI.Localization"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:dg="using:Avalonia.Controls"
         mc:Ignorable="d"
         x:Class="LocalizePak.UI.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="GLS — Game Localization System"
+        Title="{loc:Loc App_Title}"
         Icon="/Assets/glslogo.ico"
         Width="1420" Height="880"
         MinWidth="1280" MinHeight="740"
@@ -52,18 +53,18 @@
                     <Border Background="#18FFFFFF" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="12" VerticalAlignment="Center"/>
-                            <TextBlock Text="Motor:" Classes="caption" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Loc Engine_Label}" Classes="caption" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding SelectedProviderName}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentHoverBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                     <Border Background="#18FFFFFF" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="6,2">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="🧠" FontSize="12" VerticalAlignment="Center"/>
-                            <TextBlock Text="Düşünme:" Classes="caption" VerticalAlignment="Center"/>
+                            <TextBlock Text="{loc:Loc Reasoning_Label}" Classes="caption" VerticalAlignment="Center"/>
                             <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReasoningEffortOptions}"
                                       SelectedItem="{Binding SelectedReasoningEffort}"
                                       Width="175"
-                                      ToolTip.Tip="AI Düşünme &amp; Akıl Yürütme Seviyesi (Kapalı / Düşük / Orta / Yüksek)"/>
+                                      ToolTip.Tip="{loc:Loc Reasoning_Tooltip}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -77,69 +78,69 @@
                         </Border>
                         <StackPanel VerticalAlignment="Center" Spacing="1">
                             <TextBlock Text="GLS" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Text="Game Localization System" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                            <TextBlock Text="{loc:Loc App_Subtitle}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
                         </StackPanel>
                     </StackPanel>
 
                     <!-- WinUI 3 Menü Çubuğu -->
                     <Menu Background="Transparent" VerticalAlignment="Center">
-                        <MenuItem Header="_Dosya">
-                            <MenuItem Header="🗂️  .pak Dosyası Aç... (Ctrl+O)" Command="{Binding OpenPakCommand}"/>
-                            <MenuItem Header="📄  Lokalizasyon Dosyası Aç... (.locres, .json, .csv) (Ctrl+Shift+O)" Command="{Binding OpenSingleFileCommand}"/>
-                            <MenuItem Header="➕  Harici Lokalizasyon Dosyası Ekle..." Command="{Binding AddExternalFileCommand}"/>
-                            <MenuItem Header="✕  Mevcut Dosyayı/Paketi Kapat" Command="{Binding CloseCurrentFileCommand}" IsEnabled="{Binding IsPakLoaded}"/>
+                        <MenuItem Header="{loc:Loc Menu_File}">
+                            <MenuItem Header="{loc:Loc Menu_File_OpenPak}" Command="{Binding OpenPakCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_OpenSingle}" Command="{Binding OpenSingleFileCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_AddExternal}" Command="{Binding AddExternalFileCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_Close}" Command="{Binding CloseCurrentFileCommand}" IsEnabled="{Binding IsPakLoaded}"/>
                             <Separator/>
-                            <MenuItem Header="🚀  Tarihli Klasöre Çıkart (Orijinal İsimle)... (Ctrl+E)" Command="{Binding ExportToTimestampedFolderCommand}"/>
-                            <MenuItem Header="📂  Son Çıktı Klasörünü Aç" Command="{Binding OpenOutputFolderCommand}" IsEnabled="{Binding HasExportedDirectory}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_ExportFolder}" Command="{Binding ExportToTimestampedFolderCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_OpenFolder}" Command="{Binding OpenOutputFolderCommand}" IsEnabled="{Binding HasExportedDirectory}"/>
                             <Separator/>
-                            <MenuItem Header="📥  Çevirileri CSV Olarak Dışa Aktar (Excel)..." Command="{Binding ExportTranslationsCsvCommand}"/>
-                            <MenuItem Header="📤  Düzenlenmiş CSV'yi İçe Aktar..." Command="{Binding ImportTranslationsCsvCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_ExportCsv}" Command="{Binding ExportTranslationsCsvCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_ImportCsv}" Command="{Binding ImportTranslationsCsvCommand}"/>
                             <Separator/>
-                            <MenuItem Header="💾  Farklı Kaydet (Doğrudan Seç)... (Ctrl+S)" Command="{Binding SavePakDirectCommand}"/>
-                            <MenuItem Header="📦  Yama Paketi Olarak Dışa Aktar (_P.pak)..." Command="{Binding ExportPatchCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_SavePak}" Command="{Binding SavePakDirectCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_File_ExportPatch}" Command="{Binding ExportPatchCommand}"/>
                             <Separator/>
-                            <MenuItem Header="🚪  Çıkış" Click="OnExitClick"/>
+                            <MenuItem Header="{loc:Loc Menu_File_Exit}" Click="OnExitClick"/>
                         </MenuItem>
-                        <MenuItem Header="_Düzenle">
-                            <MenuItem Header="🔍  Bul ve Değiştir... (Ctrl+H / Ctrl+F)" Command="{Binding ToggleFindReplaceCommand}"/>
+                        <MenuItem Header="{loc:Loc Menu_Edit}">
+                            <MenuItem Header="{loc:Loc Menu_Edit_FindReplace}" Command="{Binding ToggleFindReplaceCommand}"/>
                             <Separator/>
-                            <MenuItem Header="📋  Kaynak Metni Kopyala" Command="{Binding CopySourceCommand}"/>
-                            <MenuItem Header="📋  Çeviri Metnini Kopyala" Command="{Binding CopyTranslationCommand}"/>
-                            <MenuItem Header="🔄  Orijinal Metni Çeviriye Aktar" Command="{Binding CopySourceToTranslationCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Edit_CopySource}" Command="{Binding CopySourceCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Edit_CopyTranslation}" Command="{Binding CopyTranslationCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Edit_CopySourceToTranslation}" Command="{Binding CopySourceToTranslationCommand}"/>
                             <Separator/>
-                            <MenuItem Header="☑️  Tümünü Seç" Command="{Binding SelectAllFilteredCommand}"/>
-                            <MenuItem Header="⬜  Seçimi Temizle" Command="{Binding DeselectAllCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Edit_SelectAll}" Command="{Binding SelectAllFilteredCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Edit_DeselectAll}" Command="{Binding DeselectAllCommand}"/>
                         </MenuItem>
-                        <MenuItem Header="_Çeviri">
-                            <MenuItem Header="🚀  Çeviriyi Başlat / Durdur (F5)" Command="{Binding PrimaryActionCommand}"/>
-                            <MenuItem Header="⏭️  Kaldığı Yerden Devam Et" Command="{Binding ResumeTranslationCommand}"/>
-                            <MenuItem Header="⏹️  İptal Et (Esc)" Command="{Binding CancelTranslationCommand}"/>
+                        <MenuItem Header="{loc:Loc Menu_Translation}">
+                            <MenuItem Header="{loc:Loc Menu_Trans_StartStop}" Command="{Binding PrimaryActionCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Resume}" Command="{Binding ResumeTranslationCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Cancel}" Command="{Binding CancelTranslationCommand}"/>
                             <Separator/>
-                            <MenuItem Header="🛡️  Kalite Kontrolü (QA) Çalıştır (F7)" Command="{Binding RunQaCheckCommand}"/>
-                            <MenuItem Header="🛠️  Eksik Etiket ve Değişkenleri Otomatik Onar" Command="{Binding AutoFixAllQaIssuesCommand}"/>
-                            <MenuItem Header="🧪  Sahte Yerelleştirme ile Test Et (Pseudolocalization)..." Command="{Binding ApplyPseudolocalizationCommand}" ToolTip.Tip="0 jeton harcayarak metinleri %40 uzatır ve arayüz taşmalarını test eder"/>
-                            <MenuItem Header="✨  Seçili Satırı Yeniden Çevir" Command="{Binding RetranslateSingleCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_RunQa}" Command="{Binding RunQaCheckCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_AutoFix}" Command="{Binding AutoFixAllQaIssuesCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Pseudo}" Command="{Binding ApplyPseudolocalizationCommand}" ToolTip.Tip="{loc:Loc Menu_Trans_Pseudo_Tooltip}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Retranslate}" Command="{Binding RetranslateSingleCommand}"/>
                             <Separator/>
-                            <MenuItem Header="⚠️  Hata Raporu Al (CSV)..." Command="{Binding ExportErrorsCsvCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_ExportErrors}" Command="{Binding ExportErrorsCsvCommand}"/>
                             <Separator/>
-                            <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Glossary}" Click="OnGlossaryClick"/>
                         </MenuItem>
-                        <MenuItem Header="_Ayarlar">
-                            <MenuItem Header="⚙️  AI Motorları ve Tercihler..." Click="OnSettingsClick"/>
-                            <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                        <MenuItem Header="{loc:Loc Menu_Settings}">
+                            <MenuItem Header="{loc:Loc Menu_Settings_Config}" Click="OnSettingsClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Trans_Glossary}" Click="OnGlossaryClick"/>
                             <Separator/>
-                            <MenuItem Header="🗑️  Çeviri Belleğini (Hafızayı) Temizle" Command="{Binding ClearTranslationMemoryCommand}"/>
+                            <MenuItem Header="{loc:Loc Menu_Settings_ClearTM}" Command="{Binding ClearTranslationMemoryCommand}"/>
                         </MenuItem>
-                        <MenuItem Header="_Yardım">
-                            <MenuItem Header="💡  Oyun Dosyaları &amp; Yerelleştirme Rehberi (Öğretici)..." Click="OnLocalizationGuideClick"/>
+                        <MenuItem Header="{loc:Loc Menu_Help}">
+                            <MenuItem Header="{loc:Loc Menu_Help_Guide}" Click="OnLocalizationGuideClick"/>
                             <Separator/>
-                            <MenuItem Header="🔑  AES Anahtar Havuzu (Key Vault)..." Click="OnAesKeyVaultClick"/>
-                            <MenuItem Header="🎮  Canlı Oyundan AES Çıkarıcı (RAM Dumper)..." Click="OnRamAesExtractorClick"/>
-                            <MenuItem Header="🤖  AI Oyun Motoru &amp; AES Dedektifi..." Click="OnAiAesAssistantClick"/>
-                            <MenuItem Header="🔑  AES Anahtarı Nedir ve Nereden Bulunur?" Click="OnAesHelpClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_KeyVault}" Click="OnAesKeyVaultClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_RamExtractor}" Click="OnRamAesExtractorClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_AiAssistant}" Click="OnAiAesAssistantClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_AesHelp}" Click="OnAesHelpClick"/>
                             <Separator/>
-                            <MenuItem Header="📖  Kullanım Kılavuzu (WORKFLOW.md)" Click="OnHelpClick"/>
-                            <MenuItem Header="ℹ️  Hakkında — GLS" Click="OnAboutClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_Workflow}" Click="OnHelpClick"/>
+                            <MenuItem Header="{loc:Loc Menu_Help_About}" Click="OnAboutClick"/>
                         </MenuItem>
                     </Menu>
                 </StackPanel>
