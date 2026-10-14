@@ -68,6 +68,8 @@ public static class StringsZh
 
         // Navigation Tabs (Left Pane)
         ["Tab_Pak"] = "📦 封包",
+        ["Tab_ArchiveFiles"] = "📄 归档文件",
+        ["Tab_AesKey"] = "🔑 AES 密钥",
         ["Tab_Filter"] = "🔍 筛选与搜索",
         ["Tab_Progress"] = "📊 进度",
 
@@ -111,9 +113,11 @@ public static class StringsZh
         ["Telemetry_LinesSec_Calculating"] = "计算中...",
 
         // Center Tabs
-        ["Tab_TranslationEditor"] = "📝 翻译编辑器",
-        ["Tab_FindReplace"] = "🔍 批量查找与替换",
+        ["Tab_TranslationEditor"] = "📋 翻译编辑器",
+        ["Tab_StatsSummary"] = "📊 统计与概览",
         ["Tab_QaInspection"] = "🛡️ 质量检查 (QA)",
+        ["Tab_MemoryGlossary"] = "📚 翻译记忆与术语表",
+        ["Tab_FindReplace"] = "🔍 批量查找与替换",
         ["Tab_ConsoleLogs"] = "📜 控制台与实时日志",
 
         // Translation Editor Toolbar & Grid

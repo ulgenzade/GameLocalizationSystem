@@ -155,7 +155,7 @@
                 <TabControl>
 
                     <!-- Sekme 1: Paket & Dosya İşlemleri -->
-                    <TabItem Header="📦 Paket">
+                    <TabItem Header="{loc:Loc Tab_Pak}">
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="10">
 
@@ -231,14 +231,14 @@
                                 <Border Background="#1C1C1C" BorderBrush="#2D2D2D" BorderThickness="1" CornerRadius="8" Padding="14" IsVisible="{Binding !IsPakLoaded}" DragDrop.AllowDrop="True">
                                     <StackPanel Spacing="6" HorizontalAlignment="Center">
                                         <TextBlock Text="📦" FontSize="26" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Henüz .pak Dosyası Yüklenmedi" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Bir dosya seçin veya buraya sürükleyin" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{loc:Loc Pak_NoPakLoaded}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{loc:Loc Pak_DragDropTip}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
                                 <!-- Paket YÜKLÜ DEĞİLKEN: Ana Büyük Aç Butonları -->
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="6" IsVisible="{Binding !IsPakLoaded}">
-                                    <Button Grid.Column="0" Content="🗂️  .pak Aç"
+                                    <Button Grid.Column="0" Content="{loc:Loc Pak_OpenPakBtn}"
                                             Classes="accent"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Center"
@@ -246,7 +246,7 @@
                                             Command="{Binding OpenPakCommand}"
                                             IsEnabled="{Binding !IsTranslating}"
                                             ToolTip.Tip="Yeni bir .pak arşivi açar."/>
-                                    <Button Grid.Column="1" Content="📄  Dosya Aç"
+                                    <Button Grid.Column="1" Content="{loc:Loc Pak_OpenFileBtn}"
                                             Classes="secondary"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Center"
@@ -409,7 +409,7 @@
                     </TabItem>
 
                     <!-- Sekme 2: Arşiv İçeriği (Dosya Ağacı) -->
-                    <TabItem Header="📄 Arşiv Dosyaları">
+                    <TabItem Header="{loc:Loc Tab_ArchiveFiles}">
                         <Grid RowDefinitions="Auto,*,Auto" Margin="0,8,0,0">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,0,6">
                                 <TextBlock Classes="caption" Text="Lokalizasyon Dosyaları" FontWeight="SemiBold"/>
@@ -460,7 +460,7 @@
                     </TabItem>
 
                     <!-- Sekme 3: AES Şifreleme Araçları -->
-                    <TabItem Header="🔑 AES Şifre">
+                    <TabItem Header="{loc:Loc Tab_AesKey}">
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="10">
                                 <Border Background="#222222" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
@@ -519,7 +519,7 @@
                     <!-- ═══════════════════════════════════════════════════════════════ -->
                     <!-- SEKME 1: ÇEVİRİ TABLOSU & EDİTÖR                                 -->
                     <!-- ═══════════════════════════════════════════════════════════════ -->
-                    <TabItem Header="📋 Çeviri Tablosu &amp; Editör">
+                    <TabItem Header="{loc:Loc Tab_TranslationEditor}">
                         <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">
 
                             <!-- ─── 1. COMMANDBAR (KOMUT & FİLTRE ÇUBUĞU) ─── -->
@@ -537,7 +537,7 @@
 
                                         <!-- Arama Kutusu (Kalan Tüm Alanı Doldurur ve Esner) -->
                                         <TextBox Grid.Column="0"
-                                                 PlaceholderText="🔍  Metinlerde ara..."
+                                                 PlaceholderText="{loc:Loc Grid_SearchPlaceholder}"
                                                  Text="{Binding FilterText}"
                                                  MinWidth="130"/>
 
@@ -565,7 +565,7 @@
                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 
                                             <!-- 1. DOSYA YÜKLENMEMİŞKEN: Buton hep oradadır, deaktif tondadır ama basılabilir (Dosya seçtirir) -->
-                                            <Button Content="🚀  Çeviriyi Başlat (F5)"
+                                            <Button Content="{loc:Loc Grid_Btn_Start}"
                                                     Classes="play-inactive"
                                                     Command="{Binding PrimaryActionCommand}"
                                                     IsVisible="{Binding ShowInactiveStartButton}"
@@ -573,7 +573,7 @@
                                                     ToolTip.Tip="Önce bir oyun veya yerelleştirme dosyası (.pak, .locres vb.) açmak için tıklayın"/>
 
                                             <!-- 2. DOSYA YÜKLÜ VE BOŞTAYKEN: Canlı Mavi Başlat Butonu -->
-                                            <Button Content="🚀  Çeviriyi Başlat (F5)"
+                                            <Button Content="{loc:Loc Grid_Btn_Start}"
                                                     Classes="play-primary"
                                                     Command="{Binding PrimaryActionCommand}"
                                                     IsVisible="{Binding ShowActiveStartButton}"
@@ -581,7 +581,7 @@
                                                     ToolTip.Tip="Tüm liste için yapay zeka çevirisini başlatır (F5)"/>
 
                                             <!-- 3. ÇEVİRİ AKARKEN: Aynı noktada beliren Canlı Turuncu Durdur/Duraklat Butonu -->
-                                            <Button Content="⏸️  Durdur"
+                                            <Button Content="{loc:Loc Grid_Btn_Stop}"
                                                     Classes="pause-action"
                                                     Command="{Binding PrimaryActionCommand}"
                                                     IsVisible="{Binding ShowPauseButton}"
@@ -589,7 +589,7 @@
                                                     ToolTip.Tip="Devam eden çeviriyi duraklatır (kaldığı yer korunur) (F5)"/>
 
                                             <!-- 4. DURAKLATILDIĞINDA: Aynı noktada beliren Canlı Mor/Mavi Devam Et Butonu -->
-                                            <Button Content="▶️  Devam Et (F5)"
+                                            <Button Content="{loc:Loc Grid_Btn_Resume}"
                                                     Classes="resume-primary"
                                                     Command="{Binding PrimaryActionCommand}"
                                                     IsVisible="{Binding ShowResumeButton}"
@@ -597,7 +597,7 @@
                                                     ToolTip.Tip="Kaldığı yerden çeviriye devam eder (F5)"/>
 
                                             <!-- 5. İPTAL ET BUTONU: SADECE çeviri çalışırken veya duraklatılmışken YANINDA belirir -->
-                                            <Button Content="⏹️  İptal Et (Esc)"
+                                            <Button Content="{loc:Loc Menu_Trans_Cancel}"
                                                     Classes="stop-danger"
                                                     Command="{Binding CancelTranslationCommand}"
                                                     IsVisible="{Binding IsCancelButtonVisible}"
@@ -744,7 +744,7 @@
                                         </DataGridTemplateColumn>
 
                                         <!-- Durum Rozeti (WinUI 3 Pill) & QA İkonu -->
-                                        <DataGridTemplateColumn Header="Durum" Width="115" IsReadOnly="True">
+                                        <DataGridTemplateColumn Header="{loc:Loc Grid_Col_Status}" Width="115" IsReadOnly="True">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate x:DataType="vm:LocalizationEntryViewModel">
                                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
@@ -773,7 +773,7 @@
                                                             FontFamily="Cascadia Code, Consolas, monospace"/>
 
                                         <!-- Anahtar -->
-                                        <DataGridTextColumn Header="Anahtar (Key)"
+                                        <DataGridTextColumn Header="{loc:Loc Grid_Col_Key}"
                                                             Binding="{Binding Key}"
                                                             Width="160"
                                                             IsReadOnly="True"
@@ -781,14 +781,14 @@
                                                             FontFamily="Cascadia Code, Consolas, monospace"/>
 
                                         <!-- Orijinal Kaynak Metin -->
-                                        <DataGridTextColumn Header="Kaynak Metin (Orijinal)"
+                                        <DataGridTextColumn Header="{loc:Loc Grid_Col_Source}"
                                                             Binding="{Binding SourceText}"
                                                             Width="*"
                                                             IsReadOnly="True"
                                                             FontSize="13"/>
 
                                         <!-- Hedef Çeviri (Düzenlenebilir) -->
-                                        <DataGridTextColumn Header="Hedef Çeviri (Düzenlenebilir)"
+                                        <DataGridTextColumn Header="{loc:Loc Grid_Col_Translation}"
                                                             Binding="{Binding TranslatedText}"
                                                             Width="*"
                                                             IsReadOnly="False"
@@ -873,7 +873,7 @@
                     <!-- ═══════════════════════════════════════════════════════════════ -->
                     <!-- SEKME 2: İSTATİSTİKLER & ÖZET ANALİZ                             -->
                     <!-- ═══════════════════════════════════════════════════════════════ -->
-                    <TabItem Header="📊 İstatistikler &amp; Özet">
+                    <TabItem Header="{loc:Loc Tab_StatsSummary}">
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="14">
 
@@ -994,7 +994,7 @@
                     <!-- ═══════════════════════════════════════════════════════════════ -->
                     <!-- SEKME 3: KALİTE KONTROL (QA) & BÜTÜNLÜK                         -->
                     <!-- ═══════════════════════════════════════════════════════════════ -->
-                    <TabItem Header="🛡️ Kalite Kontrol (QA)">
+                    <TabItem Header="{loc:Loc Tab_QaInspection}">
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="14">
 
@@ -1061,7 +1061,7 @@
                     <!-- ═══════════════════════════════════════════════════════════════ -->
                     <!-- SEKME 4: ÇEVİRİ BELLEĞİ (TM) & SÖZLÜK                           -->
                     <!-- ═══════════════════════════════════════════════════════════════ -->
-                    <TabItem Header="📚 Çeviri Belleği &amp; Sözlük">
+                    <TabItem Header="{loc:Loc Tab_MemoryGlossary}">
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="14">
 

@@ -68,6 +68,8 @@ public static class StringsTr
 
         // Navigation Tabs (Left Pane)
         ["Tab_Pak"] = "📦 Paket",
+        ["Tab_ArchiveFiles"] = "📄 Arşiv Dosyaları",
+        ["Tab_AesKey"] = "🔑 AES Şifre",
         ["Tab_Filter"] = "🔍 Filtre & Arama",
         ["Tab_Progress"] = "📊 İlerleme",
 
@@ -111,9 +113,11 @@ public static class StringsTr
         ["Telemetry_LinesSec_Calculating"] = "Hesaplanıyor...",
 
         // Center Tabs
-        ["Tab_TranslationEditor"] = "📝 Çeviri Düzenleyici",
-        ["Tab_FindReplace"] = "🔍 Toplu Bul ve Değiştir",
+        ["Tab_TranslationEditor"] = "📋 Çeviri Tablosu & Editör",
+        ["Tab_StatsSummary"] = "📊 İstatistikler & Özet",
         ["Tab_QaInspection"] = "🛡️ Kalite Kontrol (QA)",
+        ["Tab_MemoryGlossary"] = "📚 Çeviri Belleği & Sözlük",
+        ["Tab_FindReplace"] = "🔍 Toplu Bul ve Değiştir",
         ["Tab_ConsoleLogs"] = "📜 Konsol & Canlı Günlük",
 
         // Translation Editor Toolbar & Grid

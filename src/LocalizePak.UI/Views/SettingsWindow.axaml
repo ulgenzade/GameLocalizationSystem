@@ -44,7 +44,7 @@
                                 </StackPanel>
                                 <ComboBox Grid.Column="1"
                                           ItemsSource="{x:Static vm:MainViewModel.AppLanguageOptions}"
-                                          SelectedItem="{Binding SelectedAppLanguage}"
+                                          SelectedItem="{Binding SelectedAppLanguage, Mode=TwoWay}"
                                           Width="240"
                                           VerticalAlignment="Center"/>
                             </Grid>
@@ -122,7 +122,7 @@
             </TabItem>
 
             <!-- ═════════ SEKME 2: BULUT AI MOTORLARI & API ANAHTARLARI (AÇILIR EXPANDER KARTLARI) ═════════ -->
-            <TabItem Header="🤖  Bulut AI Sağlayıcıları (API)">
+            <TabItem Header="{loc:Loc Settings_Tab_Providers}">
                 <ScrollViewer Margin="0,12,0,0">
                     <StackPanel Spacing="10">
 
@@ -423,7 +423,7 @@
             </TabItem>
 
             <!-- ═════════ SEKME 3: YEREL AI KURULUM MERKEZİ (OLLAMA HUB) ═════════ -->
-            <TabItem Header="📥  Yerel AI Hub (Ollama)">
+            <TabItem Header="{loc:Loc Settings_Tab_Ollama}">
                 <ScrollViewer Margin="0,12,0,0">
                     <StackPanel Spacing="14">
 
@@ -566,7 +566,7 @@
             </TabItem>
 
             <!-- ═════════ SEKME 4: SİSTEM PROMPTU & TALİMATLAR ═════════ -->
-            <TabItem Header="📝  Prompt Şablonu">
+            <TabItem Header="{loc:Loc Settings_Tab_Prompt}">
                 <ScrollViewer Margin="0,12,0,0">
                     <StackPanel Spacing="12">
                         <Border Classes="settings-card">

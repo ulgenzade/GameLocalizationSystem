@@ -12,6 +12,13 @@ namespace LocalizePak.UI.Localization;
 /// </summary>
 public sealed class LocalizationService : INotifyPropertyChanged
 {
+    private static readonly string[] AllKnownKeys = StringsTr.Map.Keys
+        .Concat(StringsEn.Map.Keys)
+        .Concat(StringsRu.Map.Keys)
+        .Concat(StringsZh.Map.Keys)
+        .Distinct()
+        .ToArray();
+
     public static LocalizationService Instance { get; } = new();
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -32,10 +39,10 @@ public sealed class LocalizationService : INotifyPropertyChanged
     /// <summary>
     /// Dil seçeneğini günceller ("Türkçe", "English", "Русский", "简体中文" veya "tr", "en", "ru", "zh").
     /// </summary>
-    public void SetLanguage(string? lang)
+    public void SetLanguage(string? lang, bool force = false)
     {
         var norm = NormalizeLanguageCode(lang);
-        if (_currentLanguage == norm && _currentDictionary != null)
+        if (!force && _currentLanguage == norm && _currentDictionary != null)
             return;
 
         _currentLanguage = norm;
@@ -47,10 +54,29 @@ public sealed class LocalizationService : INotifyPropertyChanged
             _ => StringsTr.Map
         };
 
-        // Avalonia'da indexer binding'lerinin tamamını tetiklemek için string.Empty veya Item[] bildirilir.
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
-        LanguageChanged?.Invoke(this, EventArgs.Empty);
+        void NotifyChanges()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+            foreach (var k in AllKnownKeys)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"Item[{k}]"));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs($"[{k}]"));
+            }
+            LanguageChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        // Avalonia Application başlatılmamışsa (örneğin test ortamında) veya zaten UI thread'deysek doğrudan çalıştır
+        if (Avalonia.Application.Current == null || Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            NotifyChanges();
+        }
+        else
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(NotifyChanges);
+        }
     }
 
     /// <summary>

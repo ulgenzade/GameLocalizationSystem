@@ -74,4 +74,41 @@ public class LocalizationServiceTests
         loc.SetLanguage("简体中文");
         Assert.Equal("已加载文件: test.pak (42 行)", loc.Format("Status_FileLoaded", "test.pak", 42));
     }
+
+    [Fact]
+    public void LocExtension_BindingUpdatesWhenLanguageChanges()
+    {
+        var textBlock = new Avalonia.Controls.TextBlock();
+        var locExt = new LocExtension("Menu_File");
+        var binding = (Avalonia.Data.Binding)locExt.ProvideValue(null!);
+        textBlock.Bind(Avalonia.Controls.TextBlock.TextProperty, binding);
+
+        LocalizationService.Instance.SetLanguage("Türkçe", force: true);
+        Assert.Equal("_Dosya", textBlock.Text);
+
+        LocalizationService.Instance.SetLanguage("English");
+        Assert.Equal("_File", textBlock.Text);
+    }
+
+    [Fact]
+    public void MainViewModel_SelectedAppLanguage_ChangesLocalizationService()
+    {
+        var vm = new LocalizePak.UI.ViewModels.MainViewModel();
+
+        vm.SelectedAppLanguage = "English";
+        Assert.Equal("en", LocalizationService.Instance.CurrentLanguage);
+        Assert.Equal("_File", LocalizationService.Instance["Menu_File"]);
+
+        vm.SelectedAppLanguage = "Русский";
+        Assert.Equal("ru", LocalizationService.Instance.CurrentLanguage);
+        Assert.Equal("_Файл", LocalizationService.Instance["Menu_File"]);
+
+        vm.SelectedAppLanguage = "简体中文";
+        Assert.Equal("zh", LocalizationService.Instance.CurrentLanguage);
+        Assert.Equal("文件(_F)", LocalizationService.Instance["Menu_File"]);
+
+        vm.SelectedAppLanguage = "Türkçe";
+        Assert.Equal("tr", LocalizationService.Instance.CurrentLanguage);
+        Assert.Equal("_Dosya", LocalizationService.Instance["Menu_File"]);
+    }
 }

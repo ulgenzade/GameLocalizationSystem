@@ -68,6 +68,8 @@ public static class StringsRu
 
         // Navigation Tabs (Left Pane)
         ["Tab_Pak"] = "📦 Пакет",
+        ["Tab_ArchiveFiles"] = "📄 Файлы архива",
+        ["Tab_AesKey"] = "🔑 Ключ AES",
         ["Tab_Filter"] = "🔍 Фильтр и поиск",
         ["Tab_Progress"] = "📊 Прогресс",
 
@@ -111,9 +113,11 @@ public static class StringsRu
         ["Telemetry_LinesSec_Calculating"] = "Вычисление...",
 
         // Center Tabs
-        ["Tab_TranslationEditor"] = "📝 Редактор перевода",
-        ["Tab_FindReplace"] = "🔍 Пакетный поиск и замена",
+        ["Tab_TranslationEditor"] = "📋 Редактор перевода",
+        ["Tab_StatsSummary"] = "📊 Статистика и отчет",
         ["Tab_QaInspection"] = "🛡️ Контроль качества (QA)",
+        ["Tab_MemoryGlossary"] = "📚 Память переводов и глоссарий",
+        ["Tab_FindReplace"] = "🔍 Пакетный поиск и замена",
         ["Tab_ConsoleLogs"] = "📜 Консоль и журнал",
 
         // Translation Editor Toolbar & Grid

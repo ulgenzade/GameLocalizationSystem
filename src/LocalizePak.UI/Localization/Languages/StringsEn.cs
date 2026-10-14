@@ -68,6 +68,8 @@ public static class StringsEn
 
         // Navigation Tabs (Left Pane)
         ["Tab_Pak"] = "📦 Package",
+        ["Tab_ArchiveFiles"] = "📄 Archive Files",
+        ["Tab_AesKey"] = "🔑 AES Encryption",
         ["Tab_Filter"] = "🔍 Filter & Search",
         ["Tab_Progress"] = "📊 Progress",
 
@@ -111,9 +113,11 @@ public static class StringsEn
         ["Telemetry_LinesSec_Calculating"] = "Calculating...",
 
         // Center Tabs
-        ["Tab_TranslationEditor"] = "📝 Translation Editor",
-        ["Tab_FindReplace"] = "🔍 Bulk Find & Replace",
+        ["Tab_TranslationEditor"] = "📋 Translation Editor",
+        ["Tab_StatsSummary"] = "📊 Stats & Summary",
         ["Tab_QaInspection"] = "🛡️ Quality Assurance (QA)",
+        ["Tab_MemoryGlossary"] = "📚 Memory & Glossary",
+        ["Tab_FindReplace"] = "🔍 Bulk Find & Replace",
         ["Tab_ConsoleLogs"] = "📜 Console & Live Logs",
 
         // Translation Editor Toolbar & Grid
