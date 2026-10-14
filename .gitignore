@@ -2,7 +2,7 @@
 # GameLocalizationSystem (GLS) - Git Ignore Configuration
 # =====================================================================
 
-# --- .NET Build & Publish Outputs ---
+# --- .NET Build, Package & Publish Outputs ---
 [Bb]in/
 [Oo]bj/
 [Ll]og/
@@ -10,12 +10,19 @@
 publish/
 dist/
 TestResults/
+BenchmarkDotNet.Artifacts/
+Generated_Code/
+artifacts/
 
 # --- Debug & Native Binary Symbols & Executables ---
 *.pdb
 *.ilk
 *.aps
 *.exe
+*.exp
+*.lib
+*.map
+*.idb
 
 # --- IDEs & Developer Environment ---
 .vs/
@@ -28,45 +35,96 @@ TestResults/
 *.sln.docstates
 *.userprefs
 *.DotSettings.user
+*.DotSettings
+.avalonia/
 
 # --- Temporary, Crash & Backup Files ---
 crash_log.txt
+crash*.log
 *.tmp
 *.log
 *.bak
 *.orig
+*.swp
+*~
+dump*.dmp
+*.dmp
 Untitled*
 untitled*
 
-# --- Local Secrets & Personal Configurations ---
+# --- Local Secrets, Keys & Personal Configurations ---
 settings.json
 *.local.json
 appsettings*.local.json
+.env
+.env.*
 *.env
-*.env.local
+*.key
+*.pem
+*.pfx
 
-# --- Local Research, AI Dumps & Private Notes ---
+# --- Documentation, AI Prompts & Research Notes ---
+# docs/ içinde yalnızca onaylanmış resmi teknik dokümanlar Git'e gider:
+docs/*
+!docs/ARCHITECTURE.md
+!docs/FILE_FORMATS.md
+!docs/WORKFLOW.md
+!docs/TECH_STACK.md
+!docs/CONTRIBUTING.md
+
+# Kişisel/İç dokümanlar, araştırmalar ve AI notları
 MEMORY.md
 read/
-docs/oku.txt
-docs/README.md
-docs/GLS_v1_Paket/
-docs/Alper_Paketi/
-docs/Araştırma/
-Alper_Paketi/
+notes/
+scratch/
+temp/
+tmp/
+*Alper*
+*alper*
 *.pdf
+*.docx
+*.xlsx
 
-# --- Large Game Files & Binary Assets (Do NOT commit to git) ---
+# --- Game Binary Archives, Large Assets & Extraction Trees ---
+# Oyun dosyaları ve büyük ikili varlıklar asla depoya eklenmez
 *.pak
 *.pck
 *.locres
 *.uasset
+*.uexp
+*.ubulk
+*.uptnl
 *.umap
 *.bundle
+*.assets
+*.assets.resS
+*.utoc
+*.ucas
+*.lsx
+*.lsf
+*.lsb
+
+# Çıkarılan / paketlenen oyun dizinleri ve yamalar
+output/
+outputs/
+extracted/
+extracted_*/
+unpacked/
+unpacked_*/
+repacked/
+patches/
+*_P.pak
+_P.pak
+
+# oo2core harici DLL'ler (src/LocalizePak.IO/Native içindeki hariç)
 oo2core*.dll
+!src/LocalizePak.IO/Native/oo2core*.dll
 
 # --- Operating System Files ---
 .DS_Store
+.AppleDouble
+.LSOverride
 Thumbs.db
 desktop.ini
+ehthumbs.db
 $RECYCLE.BIN/
