@@ -44,8 +44,9 @@ public sealed class OpenRouterTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("OpenRouter API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = Services.TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = Services.TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -54,7 +55,7 @@ public sealed class OpenRouterTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki {maskedTexts.Count} metni aynı sırada çevir. Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]):\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 

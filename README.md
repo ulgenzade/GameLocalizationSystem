@@ -152,6 +152,12 @@ chmod +x scripts/build-linux.sh
 | **Ctrl + Shift + T** | Yalnızca seçili satırları çevir |
 | **Ctrl + R** | Yalnızca hatalı satırları yeniden dene |
 
+---
+
+## 👥 Katkıda Bulunanlar & Özel Teşekkürler
+
+- **[Bayhan Ex Machina](https://github.com/ulgenzade/GameLocalizationSystem)** — Unreal Engine 4/5 tersine mühendislik araştırmaları, AES-256-ECB şifreleme modu analizi, `.locres` ikili hash yapısı ve Poppy Playtime vaka incelemesi konusundaki değerli teknik katkı ve rehberlikleri için özel teşekkür ederiz.
+
 </details>
 
 ---
@@ -288,7 +294,19 @@ chmod +x scripts/build-linux.sh
 | **Ctrl + Shift + T** | Translate selected rows only |
 | **Ctrl + R** | Retry failed rows only |
 
+---
+
+## 👥 Contributors & Special Thanks
+
+- **[Bayhan Ex Machina](https://github.com/ulgenzade/GameLocalizationSystem)** — Special thanks for invaluable technical research on Unreal Engine 4/5 reverse engineering, AES-256-ECB encryption analysis, `.locres` binary hash architecture, and the Poppy Playtime case study.
+
 </details>
+
+---
+
+## 👥 Katkıda Bulunanlar / Contributors & Special Thanks
+
+- **[Bayhan Ex Machina](https://github.com/ulgenzade/GameLocalizationSystem)** — Unreal Engine tersine mühendislik araştırmaları, AES-256-ECB şifreleme modu analizi ve `.locres` ikili hash mimarisi teknik katkıları / *Unreal Engine reverse engineering, AES-256-ECB architecture analysis & `.locres` research.*
 
 ---
 

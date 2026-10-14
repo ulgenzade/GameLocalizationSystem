@@ -673,4 +673,43 @@ public class LocalizationTests
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    [Theory]
+    [InlineData("Otomatik Algıla", "auto")]
+    [InlineData("auto", "auto")]
+    [InlineData("Türkçe", "tr")]
+    [InlineData("İngilizce", "en")]
+    [InlineData("English (İngilizce)", "en")]
+    [InlineData("Русский (Rusça)", "ru")]
+    [InlineData("简体中文 (Çince)", "zh")]
+    [InlineData("Almanca", "de")]
+    [InlineData("Fransızca", "fr")]
+    [InlineData("İspanyolca", "es")]
+    [InlineData("Japonca", "ja")]
+    [InlineData("Korece", "ko")]
+    [InlineData("İtalyanca", "it")]
+    [InlineData("Portekizce", "pt")]
+    [InlineData("Arapça", "ar")]
+    public void MapLanguageToIsoCode_CorrectlyMapsAllLanguages(string input, string expectedIso)
+    {
+        var result = LocalizePak.Translation.Services.TranslationPromptHelper.MapLanguageToIsoCode(input);
+        Assert.Equal(expectedIso, result);
+    }
+
+    [Fact]
+    public void TranslationPromptHelper_BuildSystemPrompt_HandlesAutoAndTargetLanguages()
+    {
+        var ctx = new TranslationContext
+        {
+            SourceLanguage = "auto",
+            SourceLanguageName = "Otomatik Algıla",
+            TargetLanguage = "tr",
+            TargetLanguageName = "Türkçe"
+        };
+
+        var prompt = LocalizePak.Translation.Services.TranslationPromptHelper.BuildSystemPrompt(ctx, "JSON Format");
+        Assert.Contains("HEDEF DİL: Türkçe (tr)", prompt);
+        Assert.Contains("KAYNAK DİL: Otomatik Algılama", prompt);
+        Assert.Contains("KESİNLİKLE Türkçe diline çevireceksin", prompt);
+    }
 }

@@ -120,6 +120,12 @@ public class MyNewProvider : ITranslationProvider
 
 ---
 
+## Katkıda Bulunanlar & Özel Teşekkürler
+
+- **[Bayhan Ex Machina](https://github.com/ulgenzade/GameLocalizationSystem)** — Unreal Engine tersine mühendislik araştırmaları, AES-256-ECB şifreleme modu analizi ve `.locres` ikili hash mimarisi teknik katkıları.
+
+---
+
 ## Lisans
 
 Tüm katkılar MIT Lisansı altında yayımlanacaktır.

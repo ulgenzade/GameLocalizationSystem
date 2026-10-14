@@ -7,9 +7,12 @@ namespace LocalizePak.UI.ViewModels;
 
 public sealed partial class RamAesExtractorViewModel : ObservableObject
 {
-    private readonly string? _pakFilePath;
+    private CancellationTokenSource? _scanCts;
 
     public ObservableCollection<RunningGameProcess> ProcessList { get; } = [];
+
+    [ObservableProperty]
+    private string _pakFilePath = string.Empty;
 
     [ObservableProperty]
     private RunningGameProcess? _selectedProcess;
@@ -36,7 +39,7 @@ public sealed partial class RamAesExtractorViewModel : ObservableObject
 
     public RamAesExtractorViewModel(string? pakFilePath = null)
     {
-        _pakFilePath = pakFilePath;
+        PakFilePath = pakFilePath ?? string.Empty;
         RefreshProcesses();
     }
 
@@ -65,9 +68,95 @@ public sealed partial class RamAesExtractorViewModel : ObservableObject
         StatusMessage = $"{ProcessList.Count} çalışan süreç listelendi.";
     }
 
+    [ObservableProperty]
+    private string _exeFilePath = string.Empty;
+
     partial void OnFilterTextChanged(string value)
     {
         RefreshProcesses();
+    }
+
+    partial void OnSelectedProcessChanged(RunningGameProcess? value)
+    {
+        if (value != null)
+        {
+            if (!string.IsNullOrEmpty(value.FilePath))
+            {
+                ExeFilePath = value.FilePath;
+            }
+
+            if (string.IsNullOrEmpty(PakFilePath))
+            {
+                var autoPak = RamAesExtractor.TryFindGamePakFile(value.Id);
+                if (!string.IsNullOrEmpty(autoPak))
+                {
+                    PakFilePath = autoPak;
+                    StatusMessage = $"'{value.ProcessName}' için doğrulama paketi otomatik seçildi: {Path.GetFileName(autoPak)}";
+                }
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task StartStaticExeScanAsync()
+    {
+        var exePath = !string.IsNullOrWhiteSpace(ExeFilePath) ? ExeFilePath : SelectedProcess?.FilePath;
+
+        if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+        {
+            StatusMessage = "Lütfen önce taranacak oyunun .exe dosyasını seçin.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(PakFilePath) || !File.Exists(PakFilePath))
+        {
+            StatusMessage = "Lütfen doğrulamak için oyunun şifreli .pak dosyasını seçin.";
+            return;
+        }
+
+        _scanCts?.Cancel();
+        _scanCts = new CancellationTokenSource();
+        var ct = _scanCts.Token;
+
+        try
+        {
+            IsScanning = true;
+            HasFoundKey = false;
+            FoundAesKey = string.Empty;
+            ScanProgress = 30;
+            StatusMessage = $"'{Path.GetFileName(exePath)}' exe dosyası çalıştırılmadan statik taranıyor (yığın imm32 / imm64 sabitleri)...";
+
+            var result = await Task.Run(() => StaticAesKeyScanner.ScanFile(exePath, PakFilePath, msg =>
+            {
+                StatusMessage = msg;
+            }, ct), ct);
+
+            if (result != null)
+            {
+                FoundAesKey = result.KeyHex;
+                HasFoundKey = true;
+                ScanProgress = 100;
+                StatusMessage = $"🎉 AES-256 Anahtarı Statik Taramayla 0.4 sn'de Bulundu! ({result.Method}, Ofset: 0x{result.FileOffset:X})";
+            }
+            else
+            {
+                StatusMessage = "⚠️ Exe içinde statik anahtar bulunamadı. Oyunu çalıştırıp 'Belleği Tara' (RAM) butonunu deneyebilirsiniz.";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Statik tarama iptal edildi.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Statik tarama hatası: {ex.Message}";
+        }
+        finally
+        {
+            IsScanning = false;
+            _scanCts?.Dispose();
+            _scanCts = null;
+        }
     }
 
     [RelayCommand]
@@ -79,24 +168,38 @@ public sealed partial class RamAesExtractorViewModel : ObservableObject
             return;
         }
 
+        _scanCts?.Cancel();
+        _scanCts = new CancellationTokenSource();
+        var ct = _scanCts.Token;
+
         try
         {
             IsScanning = true;
             HasFoundKey = false;
             FoundAesKey = string.Empty;
             ScanProgress = 0;
-            StatusMessage = $"'{SelectedProcess.ProcessName}' süreci taranıyor, lütfen bekleyin...";
+            StatusMessage = $"'{SelectedProcess.ProcessName}' süreci taranıyor...";
 
-            var progress = new Progress<int>(p =>
+            var progress = new Progress<(int Progress, string Status)>(update =>
             {
-                ScanProgress = p;
-                StatusMessage = $"RAM taranıyor: %{p}";
+                ScanProgress = update.Progress;
+                StatusMessage = update.Status;
             });
+
+            var targetPak = !string.IsNullOrWhiteSpace(PakFilePath) && File.Exists(PakFilePath)
+                ? PakFilePath
+                : RamAesExtractor.TryFindGamePakFile(SelectedProcess.Id);
+
+            if (!string.IsNullOrEmpty(targetPak) && string.IsNullOrEmpty(PakFilePath))
+            {
+                PakFilePath = targetPak;
+            }
 
             var key = await RamAesExtractor.ScanProcessForAesKeyAsync(
                 SelectedProcess.Id,
-                _pakFilePath,
-                progress);
+                targetPak,
+                progress,
+                ct);
 
             if (!string.IsNullOrEmpty(key))
             {
@@ -106,8 +209,14 @@ public sealed partial class RamAesExtractorViewModel : ObservableObject
             }
             else
             {
-                StatusMessage = "⚠️ Bellekte eşleşen kesin bir AES anahtarı bulunamadı. Oyunun ana menüsüne kadar ilerlediğinden emin olun.";
+                StatusMessage = string.IsNullOrEmpty(targetPak)
+                    ? "⚠️ Doğrulama paketi (.pak) bulunamadı! Lütfen üstteki 'Gözat...' butonundan oyunun .pak dosyasını seçin."
+                    : "⚠️ Bellekte eşleşen kesin bir AES anahtarı bulunamadı. Oyunun ana menüsüne kadar ilerlediğinden emin olun.";
             }
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Tarama kullanıcı tarafından durduruldu.";
         }
         catch (Exception ex)
         {
@@ -116,7 +225,15 @@ public sealed partial class RamAesExtractorViewModel : ObservableObject
         finally
         {
             IsScanning = false;
+            _scanCts?.Dispose();
+            _scanCts = null;
         }
+    }
+
+    [RelayCommand]
+    public void CancelScan()
+    {
+        _scanCts?.Cancel();
     }
 
     [RelayCommand]

@@ -1,0 +1,163 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LocalizePak.UI.Views.LocalizationGuideWindow"
+        Title="Oyun Dosyaları ve Yerelleştirme Rehberi — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="740" Height="640"
+        MinWidth="600" MinHeight="500"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20">
+
+        <ScrollViewer Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel Spacing="16">
+
+                <!-- Başlık & Giriş -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <Border Grid.Column="0" Background="#1A00B4D8" BorderBrush="#3300B4D8" BorderThickness="1" CornerRadius="12" Width="64" Height="64">
+                        <TextBlock Text="💡" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                        <TextBlock Classes="title" Text="Oyun Dosyaları &amp; Yerelleştirme Rehberi" FontSize="20"/>
+                        <TextBlock Classes="caption" Text="Hangi dosyayı çevirmelisiniz? 'Default' ve semboller nereden geliyor? Tüm püf noktaları."
+                                   Foreground="{DynamicResource AccentHoverBrush}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 1. BÖLÜM: Unreal Engine'de 2 Ayrı Dosya Nedir? -->
+                <Border Classes="card" BorderBrush="#0078D4" BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="heading" Text="🎮 Unreal Engine (.locres) Dosyaları: Hangisini Çevirmeliyim?" FontSize="14" Foreground="#4CC2FF"/>
+                        <TextBlock Classes="body" TextWrapping="Wrap"
+                                   Text="Unreal Engine oyun paketlerinde (.pak) genellikle iki ayrı lokalizasyon dosyası bulunur. Doğru dosyayı seçmek, kotanızı ve vaktinizi korumak için çok önemlidir:"/>
+
+                        <!-- Game.locres Kartı (Yeşil/Mavi) -->
+                        <Border Background="#1A2E7D32" BorderBrush="#4CAF50" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="⭐  Game.locres (veya [OyunAdı].locres)" FontWeight="Bold" FontSize="13" Foreground="#81C784"/>
+                                    <Border Grid.Column="2" Background="#2E7D32" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="✅ %100 ÇEVRİLMELİ" FontWeight="Bold" FontSize="10" Foreground="#FFFFFF"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Classes="body" TextWrapping="Wrap" FontSize="12"
+                                           Text="• Bu dosya oyunun GERÇEK diyalogları, hikaye metinleri, altyazıları, görevleri, yetenekleri, eşya açıklamaları ve ana menüsünü içerir."/>
+                                <TextBlock Classes="caption" FontSize="11" Foreground="#A5D6A7"
+                                           Text="• Satır Sayısı: Genellikle 1.500 ile 8.000 satır arasıdır. Türkçe yama için çevirmeniz gereken dosya tam olarak budur!"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Engine.locres Kartı (Uyarı/Turuncu) -->
+                        <Border Background="#1AE65100" BorderBrush="#FF9800" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="⚠️  Engine.locres (Unreal Motor Metinleri)" FontWeight="Bold" FontSize="13" Foreground="#FFB74D"/>
+                                    <Border Grid.Column="2" Background="#E65100" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="❌ GENELDE GEREKMEZ" FontWeight="Bold" FontSize="10" Foreground="#FFFFFF"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Classes="body" TextWrapping="Wrap" FontSize="12"
+                                           Text="• Bu dosya oyuna değil, Epic Games'in Unreal Engine oyun motorunun editör araçlarına, konsol ekranına ve geliştirici komutlarına aittir."/>
+                                <TextBlock Classes="body" TextWrapping="Wrap" FontSize="12"
+                                           Text="• Neden bir sürü 'Default' ve '++' var? Motorun mimarisinde her bir C++ değişkeninin varsayılan değer stringi 'Default'tur. Konsol komutlarında da ++, --, - gibi semboller bulunur. Oyuncu bu metinleri normal oynanışta ASLA görmez."/>
+                                <TextBlock Classes="caption" FontSize="11" Foreground="#FFCC80"
+                                           Text="• Satır Sayısı: 20.000 – 35.000 satır! Bunu çevirmeye kalkarsanız hem API kotanız tükenir hem de yüzlerce teknik hata alırsınız."/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Tüm Dosyalar Kartı -->
+                        <Border Background="#1A242424" BorderBrush="#383838" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="🌐  Tüm Dosyalar (Birleşik Görünüm)" FontWeight="SemiBold" FontSize="12" Foreground="#E0E0E0"/>
+                                <TextBlock Classes="caption" TextWrapping="Wrap" FontSize="11"
+                                           Text="Arşivdeki tüm çeviri tablolarını tek listede toplar. Eğer oyunda birden fazla eklenti/DLC dosyası varsa arama yapmak için uygundur; ancak içinde Engine.locres varsa toplu çeviri başlatmadan önce dikkat edilmelidir."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. BÖLÜM: 5 Adımda Kusursuz Türkçe Yama Nasıl Yapılır? -->
+                <Border Classes="card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="heading" Text="🚀 5 Adımda Hızlı Çeviri İş Akışı"/>
+
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="8">
+                                <Border Grid.Column="0" Background="#242424" CornerRadius="16" Width="26" Height="26">
+                                    <TextBlock Text="1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#4CC2FF"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Paket veya Dosya Yükleyin" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Classes="caption" Text="Sol üstteki '.pak Aç' butonuyla oyunun paketini veya doğrudan bir .locres dosyasını açın. Şifreli oyunlar için sistem AES Anahtarını otomatik bulur."/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="8">
+                                <Border Grid.Column="0" Background="#242424" CornerRadius="16" Width="26" Height="26">
+                                    <TextBlock Text="2" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#4CC2FF"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Sol Listeden 'Game.locres' Dosyasını Seçin" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Classes="caption" Text="Sol paneldeki listede ⭐ ile işaretlenmiş oyun diyalog dosyasını seçtiğinizden emin olun."/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="8">
+                                <Border Grid.Column="0" Background="#242424" CornerRadius="16" Width="26" Height="26">
+                                    <TextBlock Text="3" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#4CC2FF"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="AI Motorunu ve Hedef Dili Ayarlayın" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Classes="caption" Text="Tablo üzerindeki dil seçiciden 'Otomatik ➔ Türkçe' seçin. Ayarlar'dan Gemini, Claude, OpenAI veya yerel Ollama motorunuzu yapılandırın."/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="8">
+                                <Border Grid.Column="0" Background="#242424" CornerRadius="16" Width="26" Height="26">
+                                    <TextBlock Text="4" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#4CC2FF"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="'Çeviriyi Başlat (F5)' Butonuna Basın" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Classes="caption" Text="Çeviri başladığında buton 'Durdur'a dönüşür, yanında 'İptal Et' belirir. İstediğiniz an durdurup daha sonra kaldığınız yerden devam edebilirsiniz."/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="8">
+                                <Border Grid.Column="0" Background="#242424" CornerRadius="16" Width="26" Height="26">
+                                    <TextBlock Text="5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#4CC2FF"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="'Orijinal İsimle Çıktı Al' ile Yamayı Kaydedin" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Classes="caption" Text="Sol paneldeki yeşil butona basarak yamalı paketi oluşturun. Çıktı klasöründeki dosyayı oyunun Paks klasörüne atıp Türkçe oynayın!"/>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. BÖLÜM: Diğer Oyun Motorları & Formatlar -->
+                <Border Classes="card">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="heading" Text="📚 Diğer Oyun Motorları (Unity, Larian, Godot)"/>
+                        <TextBlock Classes="caption" Text="• Larian Studios (Baldur's Gate 3): Localization/English.xml dosyası kullanılır. Tüm diyaloglar tek bir XML tablosundadır."/>
+                        <TextBlock Classes="caption" Text="• Unity: .json, .csv, .txt veya asset tabloları doğrudan açılıp çevrilebilir."/>
+                        <TextBlock Classes="caption" Text="• Değişken Güvenliği: GLS; {0}, {PlayerName}, %s, &lt;color&gt; gibi tüm oyun kodlarını otomatik maskeleyerek yapay zekanın bozmasını %100 engeller."/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Alt Kapat Butonu -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="💡 Bu rehbere her zaman Yardım ➔ Öğretici menüsünden erişebilirsiniz."
+                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Anladım, Kapat" Classes="accent" Click="OnCloseClick" Padding="20,7"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

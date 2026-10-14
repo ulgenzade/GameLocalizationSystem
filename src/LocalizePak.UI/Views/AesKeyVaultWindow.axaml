@@ -1,0 +1,195 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalizePak.UI.ViewModels"
+        xmlns:models="using:LocalizePak.Core.Models"
+        x:Class="LocalizePak.UI.Views.AesKeyVaultWindow"
+        x:DataType="vm:AesKeyVaultViewModel"
+        Title="🔑 AES Anahtar Havuzu (Key Vault) — GLS"
+        Icon="/Assets/glslogo.ico"
+        Width="920" Height="680"
+        MinWidth="780" MinHeight="520"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        TransparencyLevelHint="Mica, AcrylicBlur">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20,16">
+
+        <!-- ─── 1. BAŞLIK & AÇIKLAMA ─── -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+            <StackPanel Grid.Column="0" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="🔑" FontSize="22" VerticalAlignment="Center"/>
+                    <TextBlock Classes="subtitle" Text="AES-256 Anahtar Havuzu &amp; Bulut Veritabanı" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Classes="caption" Text="Bilinen yüzlerce Unreal Engine oyununun hazır şifreleri. Otomatik eşleşir, tek tıkla uygulanır veya buluttan güncellenir."/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Content="☁️  Buluttan Güncelle"
+                        Classes="secondary"
+                        Command="{Binding UpdateFromCloudCommand}"
+                        IsEnabled="{Binding !IsUpdatingCloud}"
+                        Padding="12,6"
+                        ToolTip.Tip="Açık kaynak GitHub depolarından en yeni oyun anahtarlarını çeker."/>
+
+                <Button Content="➕  Yeni Anahtar Ekle"
+                        Classes="accent"
+                        Command="{Binding OpenAddDialogCommand}"
+                        Padding="12,6"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ─── 2. ARAMA KUTUSU ─── -->
+        <Border Grid.Row="1" Classes="card" Padding="8,6" Margin="0,0,0,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0"
+                         PlaceholderText="🔍  Oyun adıyla ara (Örn: Poppy, Silent Hill, Tekken, Hogwarts, Palworld, Lies of P)..."
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         FontSize="13"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding FilteredKeys.Count, StringFormat='{}{0} anahtar kayıtlı'}"
+                           Classes="caption"
+                           VerticalAlignment="Center"
+                           Margin="8,0"
+                           Foreground="{DynamicResource TextMutedBrush}"/>
+            </Grid>
+        </Border>
+
+        <!-- ─── 3. ANAHTAR LİSTESİ (DATAGRID) ─── -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource CardBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="2">
+            <DataGrid ItemsSource="{Binding FilteredKeys}"
+                      SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                      Background="#181818"
+                      RowBackground="#181818"
+                      GridLinesVisibility="Horizontal"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      IsReadOnly="True"
+                      AutoGenerateColumns="False"
+                      RowHeight="42">
+                <DataGrid.Columns>
+                    <!-- Oyun Adı -->
+                    <DataGridTemplateColumn Header="🎮 Oyun" Width="260">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="models:AesKeyVaultEntry">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="10,0">
+                                    <TextBlock Text="🎮" FontSize="14" VerticalAlignment="Center"/>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding GameName}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Notes}" Classes="caption" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Motor Sürümü -->
+                    <DataGridTextColumn Header="⚡ Motor" Binding="{Binding EngineVersion}" Width="95"/>
+
+                    <!-- AES-256 Anahtarı -->
+                    <DataGridTemplateColumn Header="🔑 AES-256 Anahtarı (64 Hex)" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="models:AesKeyVaultEntry">
+                                <TextBlock Text="{Binding AesKey}"
+                                           FontFamily="Consolas, Cascadia Code, Courier New"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource AccentHoverBrush}"
+                                           Margin="8,0"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Eylemler -->
+                    <DataGridTemplateColumn Header="İşlem" Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="models:AesKeyVaultEntry">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <Button Content="📋 Kopyala"
+                                            Classes="secondary"
+                                            Padding="8,4"
+                                            FontSize="11"
+                                            Click="OnCopyKeyClick"
+                                            CommandParameter="{Binding AesKey}"
+                                            ToolTip.Tip="Anahtarı panoya kopyalar"/>
+
+                                    <Button Content="🔑 Uygula"
+                                            Classes="accent"
+                                            Padding="10,4"
+                                            FontSize="11"
+                                            Click="OnApplyKeyClick"
+                                            CommandParameter="{Binding AesKey}"
+                                            ToolTip.Tip="Bu anahtarı doğrudan GLS ana ekranına aktarır"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ─── 4. DURUM ÇUBUĞU ─── -->
+        <Border Grid.Row="3" Margin="0,10,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Classes="caption" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="✕  Kapat" Classes="secondary" Click="OnCloseClick" Padding="14,5"/>
+            </Grid>
+        </Border>
+
+        <!-- ─── MODAL: YENİ ANAHTAR EKLE KARTI ─── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                Background="#C8000000"
+                IsVisible="{Binding IsAddDialogVisible}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <Border Background="{DynamicResource CardBrush}"
+                    BorderBrush="{DynamicResource CardStrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="24"
+                    Width="520"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="➕ Yeni Oyun AES Anahtarı Ekle" Classes="heading"/>
+                    <TextBlock Text="Kendi bulduğunuz veya internetten edindiğiniz anahtarı yerel havuza kaydedin." Classes="caption"/>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Oyun Adı (Örn: S.T.A.L.K.E.R. 2):" Classes="caption" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding NewGameName, Mode=TwoWay}" PlaceholderText="Oyunun adını yazın..."/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="AES-256 Anahtarı (0x... veya 64 karakter):" Classes="caption" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding NewAesKey, Mode=TwoWay}" PlaceholderText="0x..."/>
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Motor Sürümü:" Classes="caption"/>
+                            <TextBox Text="{Binding NewEngineVersion, Mode=TwoWay}" PlaceholderText="Örn: UE 5.3"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Pak Deseni (Opsiyonel):" Classes="caption"/>
+                            <TextBox Text="{Binding NewPakPattern, Mode=TwoWay}" PlaceholderText="Örn: Stalker2"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
+                        <Button Grid.Column="0" Content="İptal" Classes="secondary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding CancelAddCommand}"/>
+                        <Button Grid.Column="1" Content="💾 Havuza Kaydet" Classes="accent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding SaveNewKeyCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+    </Grid>
+</Window>

@@ -6,4 +6,5 @@
   <Project Path="LocalizePak.IO/LocalizePak.IO.csproj" />
   <Project Path="LocalizePak.Translation/LocalizePak.Translation.csproj" />
   <Project Path="LocalizePak.UI/LocalizePak.UI.csproj" />
+  <Project Path="LocalizePak.Cli/LocalizePak.Cli.csproj" />
 </Solution>

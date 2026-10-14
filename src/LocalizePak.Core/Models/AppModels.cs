@@ -70,7 +70,7 @@ public sealed class TranslationContext
 public sealed class AppSettings
 {
     public string GeminiApiKey { get; set; } = string.Empty;
-    public string GeminiModel { get; set; } = "gemini-3.8-flash";
+    public string GeminiModel { get; set; } = "gemini-3.5-flash-lite";
 
     public string GroqApiKey { get; set; } = string.Empty;
     public string GroqModel { get; set; } = "openai/gpt-oss-20b";

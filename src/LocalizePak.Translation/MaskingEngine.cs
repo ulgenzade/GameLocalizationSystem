@@ -16,15 +16,19 @@ public sealed class MaskingEngine
         (@"\{[A-Za-z_]\w*\}", "VAR"),
         // Pozisyonel değişkenler: {0}, {1}, {2}
         (@"\{\d+\}", "POS"),
+        // Ren'Py değişkenleri: [player_name], [hero_name], [gold_count]
+        (@"\[[a-z_][a-z0-9_]*\]", "RENVAR"),
+        // RPG Maker kontrol kodları: \C[1], \V[2], \N[3], \P[4], \G, \I[5], \FS[24]
+        (@"\\[A-Za-z]+\[\d+\]|\\[\.!\^\|\$><\{\}]|\\[Gg]", "RPGMTAG"),
         // Oyun etiketleri / Diyalog koşulları: [DWARF], [OUTLAW], [SOLDIER]
-        (@"\[(?!(?:VAR|POS|FMT|ESC|TAG|ETAG|TMPTAG|NAME|GTAG)_\d+\])[A-Z0-9_]{2,}\]", "GTAG"),
+        (@"\[(?!(?:VAR|POS|FMT|ESC|TAG|ETAG|TMPTAG|NAME|GTAG|RENVAR|RPGMTAG)_\d+\])[A-Z0-9_]{2,}\]", "GTAG"),
         // printf formatları: %s, %d, %f, %i, %ls, %u
         (@"%[0-9]*\.?[0-9]*[sdifluLS]", "FMT"),
         // Escape dizileri: \n, \t, \r
         (@"\\[ntr]", "ESC"),
         // Rich text kapanış etiketleri (önce kapanışı maskele): </>, </color>, </b>, </i>
         (@"</>|<\s*/\s*[^>]*>", "ETAG"),
-        // Rich text açılış etiketleri: <RichColor ...>, <b>, <i>, <color=#FF0000>
+        // Rich text açılış etiketleri: <RichColor ...>, <b>, <i>, <color=#FF0000>, <span ...>
         (@"<[A-Za-z][^>]*>", "TAG"),
         // Unity TextMeshPro sprite/size: <sprite=X>, <size=Y>
         (@"<[a-z]+=\S+?>", "TMPTAG"),

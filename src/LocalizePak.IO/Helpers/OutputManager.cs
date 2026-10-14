@@ -22,6 +22,9 @@ public static class OutputManager
         string sourcePakPath,
         string? baseDirectory = null)
     {
+        // Windows yolları ("C:\\Games\\x.pak") Linux/macOS'ta da doğru ayrıştırılsın
+        sourcePakPath = sourcePakPath.Replace('\\', '/');
+
         var rootDir = string.IsNullOrWhiteSpace(baseDirectory)
             ? DefaultExportsBaseDir
             : baseDirectory;
@@ -56,7 +59,8 @@ public static class OutputManager
     private static string SanitizeFileName(string input)
     {
         if (string.IsNullOrEmpty(input)) return "Output";
-        var invalid = Path.GetInvalidFileNameChars();
+        // Dosya adı, Windows'ta da geçerli kalacak şekilde platformdan bağımsız temizlenir
+        var invalid = Path.GetInvalidFileNameChars().Concat("\\/:*?\"<>|").Distinct().ToArray();
         var sb = new System.Text.StringBuilder(input.Length);
         foreach (var c in input)
         {

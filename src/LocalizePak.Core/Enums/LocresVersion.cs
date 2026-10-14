@@ -5,12 +5,15 @@ namespace LocalizePak.Core.Enums;
 /// </summary>
 public enum LocresVersion : byte
 {
-    /// <summary>UE4 erken sürümleri — UTF-16LE, CRC32 hash.</summary>
+    /// <summary>ELocResVersion::Legacy — magic GUID yok, metinler dosya içinde satır içi.</summary>
+    Legacy = 0,
+
+    /// <summary>ELocResVersion::Compact — yerelleştirilmiş metinler dosya sonundaki diziden indekslenir.</summary>
     V1 = 1,
 
-    /// <summary>UE4 orta sürümleri — UTF-8, CityHash64.</summary>
+    /// <summary>ELocResVersion::Optimized_CRC32 — Compact + girdi sayısı ve metin başına referans sayacı.</summary>
     V2 = 2,
 
-    /// <summary>UE4/UE5 güncel sürümleri — UTF-8, CityHash64 + ek metadata.</summary>
+    /// <summary>ELocResVersion::Optimized_CityHash64_UTF16 — UE 4.25+; namespace/key için 32-bit hash önekli (Poppy Playtime bu sürümü kullanır).</summary>
     V3 = 3
 }

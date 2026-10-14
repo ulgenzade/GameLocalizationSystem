@@ -10,8 +10,11 @@ public sealed class LocalizationEntry
     /// <summary>Oyun motorunun metni tanımlamak için kullandığı benzersiz anahtar.</summary>
     public string Key { get; set; } = string.Empty;
 
-    /// <summary>Anahtarın binary formattaki hash değeri. Değiştirilmez!</summary>
+    /// <summary>Anahtarın .locres dosyasında saklanan hash değeri (V3). Değiştirilmez!</summary>
     public uint KeyHash { get; set; }
+
+    /// <summary>Kaynak metnin dosyada saklanan hash'i (oyun, metnin değişip değişmediğini bununla anlar). Değiştirilmez!</summary>
+    public uint SourceStringHash { get; set; }
 
     /// <summary>Orijinal oyun metni (kaynak dil).</summary>
     public string SourceText { get; set; } = string.Empty;

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using LocalizePak.Core.Interfaces;
 using LocalizePak.Core.Models;
+using LocalizePak.Translation.Services;
 
 namespace LocalizePak.Translation.Providers;
 
@@ -15,7 +16,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider
 {
     private readonly HttpClient _http;
     private string _apiKey = string.Empty;
-    private string _model = "gemini-3.8-flash";
+    private string _model = "gemini-3.5-flash-lite";
 
     public string Name => "Gemini";
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey);
@@ -25,10 +26,10 @@ public sealed class GeminiTranslationProvider : ITranslationProvider
         _http = httpClient;
     }
 
-    public void Configure(string apiKey, string model = "gemini-3.8-flash")
+    public void Configure(string apiKey, string model = "gemini-3.5-flash-lite")
     {
         _apiKey = apiKey;
-        _model = string.IsNullOrWhiteSpace(model) ? "gemini-3.8-flash" : model;
+        _model = string.IsNullOrWhiteSpace(model) ? "gemini-3.5-flash-lite" : model;
     }
 
     public async Task<IReadOnlyList<string>> TranslateBatchAsync(
@@ -40,7 +41,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider
             throw new InvalidOperationException("Gemini API anahtarı yapılandırılmamış.");
 
         var systemInstruction = BuildSystemInstruction(context);
-        var userPrompt = BuildUserPrompt(maskedTexts);
+        var userPrompt = BuildUserPrompt(maskedTexts, context);
 
         var genConfig = new JsonObject
         {
@@ -113,10 +114,35 @@ public sealed class GeminiTranslationProvider : ITranslationProvider
 
         if (!response.IsSuccessStatusCode)
         {
+            // Eğer model aşırı yoğun (503), bağlantı koptu veya bulunamadı (404) ise:
+            // Anında yüksek hacimli hafif ve garantili yedek modele (gemini-3.5-flash-lite veya gemini-3.1-flash-lite) geçiş yap
+            if ((response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable ||
+                 response.StatusCode == System.Net.HttpStatusCode.NotFound ||
+                 response.StatusCode == System.Net.HttpStatusCode.BadGateway))
+            {
+                var fallbackModel = _model.Equals("gemini-3.5-flash-lite", StringComparison.OrdinalIgnoreCase)
+                    ? "gemini-3.1-flash-lite"
+                    : "gemini-3.5-flash-lite";
+
+                var fallbackUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{fallbackModel}:generateContent";
+                using var fallbackRequest = new HttpRequestMessage(HttpMethod.Post, fallbackUrl);
+                fallbackRequest.Headers.Add("x-goog-api-key", _apiKey);
+                fallbackRequest.Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json");
+
+                using var fallbackResponse = await _http.SendAsync(fallbackRequest, ct);
+                var fallbackBody = await fallbackResponse.Content.ReadAsStringAsync(ct);
+
+                if (fallbackResponse.IsSuccessStatusCode)
+                {
+                    _model = fallbackModel;
+                    return ParseResponse(fallbackBody, maskedTexts.Count);
+                }
+            }
+
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests || responseBody.Contains("RESOURCE_EXHAUSTED"))
             {
                 throw new HttpRequestException(
-                    "⚠️ Gemini API Kotası Doldu (429 - Günlük İstek Sınırı / Rate Limit). Lütfen Ayarlar'dan modeli değiştirin (örn. gemini-2.0-flash), yeni bir API anahtarı ekleyin veya DeepSeek / Claude / Ollama kullanın.",
+                    "⚠️ Gemini API Kotası Doldu (429 - Günlük İstek Sınırı / Rate Limit). Lütfen Ayarlar'dan modeli değiştirin (örn. gemini-3.5-flash-lite) veya başka bir API anahtarı ekleyin.",
                     null,
                     System.Net.HttpStatusCode.TooManyRequests);
             }
@@ -130,46 +156,13 @@ public sealed class GeminiTranslationProvider : ITranslationProvider
 
     private static string BuildSystemInstruction(TranslationContext ctx)
     {
-        var sb = new StringBuilder();
-
-        if (!string.IsNullOrWhiteSpace(ctx.SystemPromptTemplate))
-        {
-            sb.AppendLine(ctx.SystemPromptTemplate);
-        }
-        else
-        {
-            sb.AppendLine("Sen profesyonel bir video oyunu yerelleştirme uzmanısın.");
-            sb.AppendLine($"Görevin: Oyun metinlerini İngilizce'den {ctx.TargetLanguageName}'ye en doğal ve kaliteli şekilde çevirmek.");
-            sb.AppendLine();
-            sb.AppendLine("MUTLAK KURALLAR:");
-            sb.AppendLine("1. [VAR_X], [POS_X], [FMT_X], [ESC_X], [TAG_X], [ETAG_X], [TMPTAG_X], [NAME_X] etiketlerini HİÇBİR ZAMAN çevirme, silme veya sırasını bozma.");
-            sb.AppendLine("2. Bu etiketleri tam olarak aynı şekilde, değiştirmeden çeviride koru.");
-            sb.AppendLine("3. Başlıklarda, diyaloglarda ve '*' ile başlayan anlatıcı aksiyonlarında metinleri Türkçeye çevir.");
-            sb.AppendLine("4. Yanıtını SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]");
-        }
-
-        if (!string.IsNullOrWhiteSpace(ctx.UserDirective))
-        {
-            sb.AppendLine();
-            sb.AppendLine($"ÖZEL OYUN DİREKTİFİ:\n{ctx.UserDirective}");
-        }
-
-        if (ctx.Glossary.Any())
-        {
-            sb.AppendLine();
-            sb.AppendLine("ÇEVİRİLMEYECEK VEYA ÖZEL ÇEVİRİSİ OLAN İSİMLER:");
-            foreach (var entry in ctx.Glossary)
-                sb.AppendLine($"  - {entry}");
-        }
-
-        return sb.ToString();
+        return TranslationPromptHelper.BuildSystemPrompt(ctx,
+            "Yanıtını SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]");
     }
 
-    private static string BuildUserPrompt(IReadOnlyList<string> texts)
+    private static string BuildUserPrompt(IReadOnlyList<string> texts, TranslationContext ctx)
     {
-        var items = texts.Select((t, i) => new JsonObject { ["id"] = i, ["text"] = t });
-        var arr = new JsonArray(items.Select(o => (JsonNode)o).ToArray());
-        return $"Aşağıdaki oyun metinlerini çevir ve aynı sırada JSON dizisi olarak döndür:\n{arr.ToJsonString()}";
+        return TranslationPromptHelper.BuildUserJsonArrayPrompt(texts, ctx);
     }
 
     private static IReadOnlyList<string> ParseResponse(string responseBody, int expectedCount)

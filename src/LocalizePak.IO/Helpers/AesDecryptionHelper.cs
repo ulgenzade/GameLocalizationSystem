@@ -103,4 +103,29 @@ public static class AesDecryptionHelper
         using var encryptor = aes.CreateEncryptor();
         return encryptor.TransformFinalBlock(buffer, 0, buffer.Length);
     }
+
+    /// <summary>
+    /// Unreal Engine .pak AES-256 şifre çözme: blok başına bağımsız ECB (IV yok). Uzunluk 16'nın katı olmalıdır.
+    /// </summary>
+    public static byte[] DecryptEcb(byte[] data, byte[] key)
+    {
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.Mode = CipherMode.ECB;
+        aes.Padding = PaddingMode.None;
+        int usable = data.Length - (data.Length % 16);
+        return aes.DecryptEcb(data.AsSpan(0, usable), PaddingMode.None);
+    }
+
+    /// <summary>Unreal Engine .pak AES-256 şifreleme (ECB, sıfır dolgu ile 16 bayta tamamlanır).</summary>
+    public static byte[] EncryptEcb(byte[] data, byte[] key)
+    {
+        using var aes = Aes.Create();
+        aes.Key = key;
+        aes.Mode = CipherMode.ECB;
+        aes.Padding = PaddingMode.None;
+        int rem = data.Length % 16;
+        var buf = rem == 0 ? data : [.. data, .. new byte[16 - rem]];
+        return aes.EncryptEcb(buf, PaddingMode.None);
+    }
 }

@@ -167,6 +167,31 @@ public partial class MainWindow : Window
         aesWin.ShowDialog(this);
     }
 
+    private async void OnAesKeyVaultClick(object? sender, RoutedEventArgs e)
+    {
+        var vm = new AesKeyVaultViewModel();
+        vm.OnKeySelected = (key) =>
+        {
+            ViewModel.AesKey = key;
+            ViewModel.StatusMessage = $"🔑 Anahtar Havuzundan seçilen AES Anahtarı uygulandı: {key[..Math.Min(16, key.Length)]}...";
+            if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
+            {
+                _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
+            }
+        };
+        var win = new AesKeyVaultWindow { DataContext = vm };
+        var result = await win.ShowDialog<string?>(this);
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            ViewModel.AesKey = result;
+            ViewModel.StatusMessage = $"🔑 Anahtar Havuzundan uygulandı: {result[..Math.Min(16, result.Length)]}...";
+            if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
+            {
+                _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
+            }
+        }
+    }
+
     private async void OnRamAesExtractorClick(object? sender, RoutedEventArgs e)
     {
         var vm = new RamAesExtractorViewModel(ViewModel.LastOpenedPath);
@@ -174,9 +199,13 @@ public partial class MainWindow : Window
         {
             ViewModel.AesKey = key;
             ViewModel.StatusMessage = $"🔑 RAM'den alınan AES Anahtarı uygulandı: {key[..Math.Min(16, key.Length)]}...";
-            if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
+            var targetPath = !string.IsNullOrEmpty(ViewModel.LastOpenedPath)
+                ? ViewModel.LastOpenedPath
+                : vm.PakFilePath;
+
+            if (!string.IsNullOrEmpty(targetPath))
             {
-                _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
+                _ = ViewModel.OpenPakFromPathAsync(targetPath);
             }
         };
         var win = new RamAesExtractorWindow { DataContext = vm };
@@ -206,6 +235,12 @@ public partial class MainWindow : Window
         catch { }
 
         StatusBar_ShowMessage("Yardım için docs/WORKFLOW.md dosyasına bakın.");
+    }
+
+    private void OnLocalizationGuideClick(object? sender, RoutedEventArgs e)
+    {
+        var guide = new LocalizationGuideWindow();
+        guide.ShowDialog(this);
     }
 
     private void OnAboutClick(object? sender, RoutedEventArgs e)

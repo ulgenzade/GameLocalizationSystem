@@ -64,38 +64,41 @@ public sealed class BatchTranslationOrchestrator
 
         var entriesForAi = new List<LocalizationEntry>();
 
-        // 1. ADIM: Çeviri Belleği (TM) AÇIKSA kontrol et
-        if (EnableTranslationMemory)
+        // 1. ADIM: Sembol/Noktalama Kontrolü ve Çeviri Belleği (TM)
+        foreach (var entry in validEntries)
         {
-            foreach (var entry in validEntries)
+            // Eğer metin sadece semboller, noktalama veya rakamlardan ibaretse (örn: "++", "--", "-", "----------------")
+            // Yapay zekaya gönderip kotayı yakmaya gerek yok, doğrudan orijinali korunur.
+            if (IsSymbolOrPunctuationOnly(entry.SourceText))
             {
-                if (_translationMemory.TryGet(entry.SourceText, context.TargetLanguage, out var cached) &&
-                    !string.IsNullOrWhiteSpace(cached))
-                {
-                    entry.TranslatedText = cached;
-                    entry.Status = TranslationStatus.Done;
-                    entry.Notes = "⚡ Çeviri Belleği (TM) ile anında dolduruldu (0 Kota / 0 Maliyet)";
-                    completed++;
-                }
-                else
-                {
-                    entriesForAi.Add(entry);
-                }
+                entry.TranslatedText = entry.SourceText;
+                entry.Status = TranslationStatus.Done;
+                entry.Notes = "⚡ Sembol/sayı filtresi: Doğrudan aktarıldı (0 kota)";
+                completed++;
+                continue;
             }
 
-            if (completed > 0)
+            if (EnableTranslationMemory &&
+                _translationMemory.TryGet(entry.SourceText, context.TargetLanguage, out var cached) &&
+                !string.IsNullOrWhiteSpace(cached))
             {
-                progress?.Report(new TranslationProgress(completed, total, errors,
-                    $"⚡ {completed}/{total} satır Çeviri Belleğinden (TM) anında dolduruldu!"));
+                entry.TranslatedText = cached;
+                entry.Status = TranslationStatus.Done;
+                entry.Notes = "⚡ Çeviri Belleği (TM) ile anında dolduruldu (0 Kota / 0 Maliyet)";
+                completed++;
+                continue;
             }
 
-            if (entriesForAi.Count == 0) return;
+            entriesForAi.Add(entry);
         }
-        else
+
+        if (completed > 0)
         {
-            // TM KAPALI — Tüm satırlar doğrudan AI ile temiz çevrilecek
-            entriesForAi = validEntries;
+            progress?.Report(new TranslationProgress(completed, total, errors,
+                $"⚡ {completed}/{total} satır hazır olarak tamamlandı (Sembol filtresi / TM)!"));
         }
+
+        if (entriesForAi.Count == 0) return;
 
         // Satırları Batch'lere Böl (Token kesintisini önlemek için optimize edildi)
         var batches = entriesForAi
@@ -131,6 +134,18 @@ public sealed class BatchTranslationOrchestrator
                 {
                     ct.ThrowIfCancellationRequested();
 
+                    // Küresel Rate-Limit soğuma kontrolü
+                    if (DateTime.UtcNow < _rateLimitCooldownUntil)
+                    {
+                        var wait = _rateLimitCooldownUntil - DateTime.UtcNow;
+                        if (wait > TimeSpan.Zero)
+                        {
+                            progress?.Report(new TranslationProgress(completed, total, errors,
+                                $"⏳ API Hız Sınırı (Rate Limit) devrede. Kota yenilenmesi için {Math.Ceiling(wait.TotalSeconds)} sn bekleniyor..."));
+                            await Task.Delay(wait, ct);
+                        }
+                    }
+
                     // Batch'teki girdileri işaretle
                     foreach (var e in batch) e.Status = TranslationStatus.Translating;
 
@@ -144,7 +159,7 @@ public sealed class BatchTranslationOrchestrator
                     try
                     {
                         translations = await TranslateWithRetryAsync(
-                            provider, maskedTexts, context, maxRetries: 5, ct);
+                            provider, maskedTexts, context, maxRetries: 4, progress, completed, total, errors, ct);
                     }
                     catch (OperationCanceledException)
                     {
@@ -250,14 +265,33 @@ public sealed class BatchTranslationOrchestrator
         }
     }
 
+    private static readonly SemaphoreSlim _rateLimitLock = new(1, 1);
+    private static DateTime _rateLimitCooldownUntil = DateTime.MinValue;
+
+    /// <summary>
+    /// Metnin sadece noktalama işaretleri, ayraçlar, tireler veya rakamlardan ibaret olup olmadığını belirler.
+    /// (örn: "++", "--", "-", "------------------------------------", "123", "///").
+    /// </summary>
+    private static bool IsSymbolOrPunctuationOnly(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        // İçerisinde en az 1 harf (Letter) yoksa (sadece sembol, noktalama, sayı, boşluk)
+        return !text.Any(char.IsLetter);
+    }
+
     private static async Task<IReadOnlyList<string>> TranslateWithRetryAsync(
         ITranslationProvider provider,
         IReadOnlyList<string> texts,
         TranslationContext context,
         int maxRetries,
+        IProgress<TranslationProgress>? progress,
+        int completed,
+        int total,
+        int errors,
         CancellationToken ct)
     {
         int attempt = 0;
+        int effectiveMaxRetries = Math.Max(3, maxRetries);
         while (true)
         {
             try
@@ -265,21 +299,31 @@ public sealed class BatchTranslationOrchestrator
                 return await provider.TranslateBatchAsync(texts, context, ct);
             }
             catch (HttpRequestException ex) when (
-                ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests &&
-                attempt < maxRetries)
+                (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                 ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable ||
+                 ex.Message.Contains("RESOURCE_EXHAUSTED", StringComparison.OrdinalIgnoreCase) ||
+                 ex.Message.Contains("Rate Limit", StringComparison.OrdinalIgnoreCase)) &&
+                attempt < effectiveMaxRetries)
             {
                 attempt++;
-                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt)); // 2, 4, 8, 16, 32 sn
-                await Task.Delay(delay, ct);
-            }
-            catch (HttpRequestException ex) when (
-                ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable &&
-                attempt < maxRetries)
-            {
-                attempt++;
-                var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
-                await Task.Delay(delay, ct);
+                // 429 durumunda küresel soğuma süresini güncelle (8-20 sn)
+                var cooldown = TimeSpan.FromSeconds(Math.Min(25, 8 + (attempt * 4)));
+                await _rateLimitLock.WaitAsync(ct);
+                try
+                {
+                    _rateLimitCooldownUntil = DateTime.UtcNow.Add(cooldown);
+                }
+                finally
+                {
+                    _rateLimitLock.Release();
+                }
+
+                progress?.Report(new TranslationProgress(completed, total, errors,
+                    $"⏳ API Hız Sınırı (Rate Limit: 429) aşıldı. Kota yenilenmesi için {cooldown.TotalSeconds:F0} sn bekleniyor... (Deneme {attempt}/{effectiveMaxRetries})"));
+
+                await Task.Delay(cooldown, ct);
             }
         }
     }
 }
+

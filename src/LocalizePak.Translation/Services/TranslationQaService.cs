@@ -4,13 +4,31 @@ using LocalizePak.Core.Models;
 
 namespace LocalizePak.Translation.Services;
 
+public enum MqmCategory
+{
+    Accuracy,     // Doğruluk (Eksik değişken, çevrilmemiş metin)
+    Fluency,      // Akıcılık (Dilbilgisi, eksik kaçış kodları)
+    Terminology,  // Terminoloji (Özel isim/sözlük uyumsuzluğu)
+    Design        // Biçim/Arayüz (Kapanmayan etiketler, buton taşma riski)
+}
+
+public enum QaSeverity
+{
+    Critical, // Oyun çökme veya kod bozulma riski (Değişkenler, etiketler)
+    High,     // Anlam bozulması veya çevrilmemiş metin
+    Medium,   // Arayüz taşma riski (%80+ uzama)
+    Low       // Boşluk veya küçük biçim uyuşmazlığı
+}
+
 public enum QaIssueType
 {
     MissingVariable,
     UnclosedTag,
     MissingEscape,
     TrailingWhitespaceMismatch,
-    OverflowRisk
+    OverflowRisk,
+    TerminologyMismatch,
+    UntranslatedContent
 }
 
 public sealed record QaIssue(
@@ -20,7 +38,9 @@ public sealed record QaIssue(
     string TranslatedText,
     QaIssueType IssueType,
     string Description,
-    bool CanAutoFix
+    bool CanAutoFix,
+    MqmCategory Category = MqmCategory.Accuracy,
+    QaSeverity Severity = QaSeverity.Medium
 );
 
 /// <summary>
@@ -60,7 +80,9 @@ public static class TranslationQaService
                     tr,
                     QaIssueType.MissingVariable,
                     $"Kaynak metindeki '{v}' değişkeni çeviride bulunamadı.",
-                    CanAutoFix: true
+                    CanAutoFix: true,
+                    Category: MqmCategory.Accuracy,
+                    Severity: QaSeverity.Critical
                 ));
             }
         }
@@ -78,7 +100,9 @@ public static class TranslationQaService
                     tr,
                     QaIssueType.MissingVariable,
                     $"Kaynak metindeki '{p}' format kodu çeviride bulunamadı.",
-                    CanAutoFix: true
+                    CanAutoFix: true,
+                    Category: MqmCategory.Accuracy,
+                    Severity: QaSeverity.Critical
                 ));
             }
         }
@@ -96,7 +120,9 @@ public static class TranslationQaService
                     tr,
                     QaIssueType.MissingEscape,
                     $"Kaynak metindeki '{esc}' satır/sekme kaçış kodu çeviride eksik.",
-                    CanAutoFix: true
+                    CanAutoFix: true,
+                    Category: MqmCategory.Fluency,
+                    Severity: QaSeverity.Medium
                 ));
             }
         }
@@ -113,7 +139,42 @@ public static class TranslationQaService
                 tr,
                 QaIssueType.UnclosedTag,
                 $"Çeviride {openTags.Count} açılış etiketine karşılık {closeTags.Count} kapanış etiketi var (Kapanmayan etiketler oyun arayüzünü bozabilir).",
-                CanAutoFix: true
+                CanAutoFix: true,
+                Category: MqmCategory.Design,
+                Severity: QaSeverity.Critical
+            ));
+        }
+
+        // 5. Kısa UI Buton / Arayüz Metinlerinde Taşma (Overflow) Riski
+        if (src.Length <= 25 && tr.Length > (int)(src.Length * 1.8) && (tr.Length - src.Length) >= 8)
+        {
+            int diffPercent = (int)(((tr.Length - src.Length) / (double)src.Length) * 100);
+            issues.Add(new QaIssue(
+                entry.Key,
+                entry.NamespaceName,
+                src,
+                tr,
+                QaIssueType.OverflowRisk,
+                $"Buton/Arayüz metni taşma riski: Metin %{diffPercent} uzadı ({src.Length} -> {tr.Length} karaktere çıktı).",
+                CanAutoFix: false,
+                Category: MqmCategory.Design,
+                Severity: QaSeverity.Medium
+            ));
+        }
+
+        // 6. Çevrilmemiş İçerik (Untranslated Content)
+        if (src.Length >= 8 && src.Equals(tr, StringComparison.Ordinal) && src.Any(char.IsLetter))
+        {
+            issues.Add(new QaIssue(
+                entry.Key,
+                entry.NamespaceName,
+                src,
+                tr,
+                QaIssueType.UntranslatedContent,
+                "Metin kaynak dilde kalmış görünüyor (Kaynak ve çeviri metinleri birebir aynı).",
+                CanAutoFix: false,
+                Category: MqmCategory.Accuracy,
+                Severity: QaSeverity.High
             ));
         }
 

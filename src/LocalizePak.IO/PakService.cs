@@ -211,9 +211,16 @@ public sealed class PakService : IPakReader, IPakWriter
             {
                 return await UnrealCuePakHandler.ExtractEntryAsync(archive.FilePath, entry, archive.AesKey, ct);
             }
+            catch (Exception ex) when (entry.DataOffset <= 0)
+            {
+                // CUE4Parse girdileri DataOffset=0 ile listelenir; ofset tabanlı yedek okuma anlamsızdır (ilk baytları 'dosya' sanıp çöp döner).
+                throw new InvalidOperationException(
+                    $"'{entry.VirtualPath}' çıkarılamadı: {ex.Message}" +
+                    (UnrealCuePakHandler.OodleStatus is { Length: > 0 } st ? $" (Oodle: {st})" : ""), ex);
+            }
             catch
             {
-                // CUE4Parse doğrudan bulamazsa standart bayt ofsetinden okumayı dene
+                // Yerel ayrıştırıcıyla açılmış (gerçek ofsetli) girdiler için ofset tabanlı okuma sürer
             }
         }
 
@@ -274,55 +281,16 @@ public sealed class PakService : IPakReader, IPakWriter
             return;
         }
 
-        // 6. Unreal Engine .pak (V8-V11, AES-256 şifreleme ve SHA1 doğrulamasıyla)
+        // 6. Unreal Engine .pak (V8 standart yama paketi formatı)
         byte[]? keyBytes = null;
-        bool isEncrypted = false;
         if (!string.IsNullOrWhiteSpace(aesKey) && AesDecryptionHelper.ValidateKey(aesKey, out var parsedKey))
         {
             keyBytes = parsedKey;
-            isEncrypted = true;
         }
-
-        var finalMountPoint = string.IsNullOrWhiteSpace(mountPoint) ? "../../../" : mountPoint;
-        if (!finalMountPoint.EndsWith('/')) finalMountPoint += "/";
 
         await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
-
-        var entries = new List<PakEntry>();
-
-        foreach (var (virtualPath, data) in files)
-        {
-            ct.ThrowIfCancellationRequested();
-            var compressed = CompressZlib(data);
-            var entry = new PakEntry
-            {
-                VirtualPath = virtualPath.TrimStart('/'),
-                DataOffset = fs.Position,
-                UncompressedSize = data.Length,
-                CompressedSize = compressed.Length,
-                Compression = CompressionMethod.Zlib,
-                Hash = System.Security.Cryptography.SHA1.HashData(data),
-                IsEncrypted = false
-            };
-            await fs.WriteAsync(compressed, ct);
-            entries.Add(entry);
-        }
-
-        long indexOffset = fs.Position;
-        byte[] rawIndex = BuildUnrealIndex(finalMountPoint, entries);
-        byte[] indexToWrite = rawIndex;
-
-        if (isEncrypted && keyBytes != null)
-        {
-            indexToWrite = AesDecryptionHelper.Encrypt(rawIndex, keyBytes);
-        }
-
-        await fs.WriteAsync(indexToWrite, ct);
-
-        long indexSize = indexToWrite.Length;
-        byte[] indexSha1 = System.Security.Cryptography.SHA1.HashData(rawIndex);
-
-        WriteFooter(fs, indexOffset, indexSize, indexSha1, isEncrypted);
+        UnrealPakWriter.Write(fs, mountPoint, files, keyBytes);
+        await fs.FlushAsync(ct);
     }
 
     // ─── Unreal Engine Archive Helpers ────────────────────────────────────────
@@ -483,54 +451,7 @@ public sealed class PakService : IPakReader, IPakWriter
         return new MemoryStream(decompressed ?? data);
     }
 
-    private static byte[] CompressZlib(byte[] data)
-    {
-        using var output = new MemoryStream();
-        using (var zlib = new ZLibStream(output, CompressionLevel.Optimal, leaveOpen: true))
-        {
-            zlib.Write(data);
-        }
-        return output.ToArray();
-    }
 
-    private static byte[] BuildUnrealIndex(string mountPoint, IReadOnlyList<PakEntry> entries)
-    {
-        using var ms = new MemoryStream();
-        using var writer = new BinaryWriter(ms, System.Text.Encoding.UTF8, leaveOpen: true);
-
-        byte[] mountBytes = System.Text.Encoding.UTF8.GetBytes(mountPoint + "\0");
-        writer.Write(mountBytes.Length);
-        writer.Write(mountBytes);
-        writer.Write(entries.Count);
-
-        foreach (var entry in entries)
-        {
-            byte[] pathBytes = System.Text.Encoding.UTF8.GetBytes(entry.VirtualPath + "\0");
-            writer.Write(pathBytes.Length);
-            writer.Write(pathBytes);
-            writer.Write(entry.DataOffset);
-            writer.Write(entry.CompressedSize);
-            writer.Write(entry.UncompressedSize);
-            writer.Write((int)entry.Compression);
-            writer.Write(entry.Hash ?? new byte[20]);
-            writer.Write((byte)0); // isEncrypted entry block
-            writer.Write((uint)0x10000); // blockSize
-        }
-
-        writer.Flush();
-        return ms.ToArray();
-    }
-
-    private static void WriteFooter(FileStream fs, long indexOffset, long indexSize, byte[] indexHash, bool isEncrypted)
-    {
-        using var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8, leaveOpen: true);
-        writer.Write(PakMagic);
-        writer.Write((int)8); // Version 8
-        writer.Write(indexOffset);
-        writer.Write(indexSize);
-        writer.Write(indexHash.Length == 20 ? indexHash : new byte[20]);
-        writer.Write((byte)(isEncrypted ? 1 : 0));
-    }
 
     // ─── 5. Heuristic İçerik Kurtarıcısı ──────────────────────────────────────
 

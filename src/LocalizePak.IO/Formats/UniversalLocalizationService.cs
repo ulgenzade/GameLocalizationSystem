@@ -21,7 +21,7 @@ public sealed class UniversalLocalizationService : ILocresSerializer
     public async Task<LocresFile> DeserializeAsync(Stream stream, CancellationToken ct = default)
     {
         // İlk birkaç byte'tan formatı anla
-        var buffer = new byte[Math.Min(128, stream.Length)];
+        var buffer = new byte[Math.Min(512, stream.Length)];
         long originalPos = stream.Position;
         await stream.ReadExactlyAsync(buffer, ct);
         stream.Seek(originalPos, SeekOrigin.Begin);
@@ -30,6 +30,13 @@ public sealed class UniversalLocalizationService : ILocresSerializer
         if (buffer.Length >= 16 && buffer[0] == 0x0E && buffer[1] == 0x14 && buffer[2] == 0x74 && buffer[3] == 0x75)
         {
             return await _locresService.DeserializeAsync(stream, ct);
+        }
+
+        // 2. İkili (Binary) dosya koruması:
+        // .locres haricindeki ikili oyun dosyaları (uasset, uexp, doku, ses, mesh vb.) metin olarak ayrıştırılmamalıdır!
+        if (IsBinaryBuffer(buffer))
+        {
+            throw new InvalidOperationException("Seçilen dosya ikili (binary) bir oyun varlığıdır ve metin/lokalizasyon tablosu içermemektedir.");
         }
 
         // Metin tabanlı formatlar (XML, JSON, CSV, TXT)
@@ -58,14 +65,20 @@ public sealed class UniversalLocalizationService : ILocresSerializer
             return ParseJson(content);
         }
 
-        // 4. CSV / TSV / INI formatı (Yalnızca XML olmayan ve açık ayırıcı içeren metinler)
+        // 4. Gettext PO / POT formatı (Unreal GatherText, Godot vb.)
+        if (PoCodec.IsPoContent(content))
+        {
+            return PoCodec.Parse(content);
+        }
+
+        // 5. CSV / TSV / INI formatı (Yalnızca XML olmayan ve açık ayırıcı içeren metinler)
         if (!content.Contains('<') && !content.Contains('>') &&
             (content.Contains(',') || content.Contains('\t') || content.Contains('=')))
         {
             return ParseDelimitedText(content);
         }
 
-        // 5. Basit satır satır metin (Fallback)
+        // 6. Basit satır satır metin (Fallback)
         return ParsePlainLines(content);
     }
 
@@ -74,6 +87,12 @@ public sealed class UniversalLocalizationService : ILocresSerializer
     {
         // Format türüne göre serileştir
         var path = locresFile.SourcePath?.ToLowerInvariant() ?? string.Empty;
+
+        if (path.EndsWith(".po") || path.EndsWith(".pot"))
+        {
+            var poText = PoCodec.Serialize(locresFile);
+            return Encoding.UTF8.GetBytes(poText);
+        }
 
         if (path.EndsWith(".xml") || path.EndsWith(".lsx"))
         {
@@ -693,6 +712,40 @@ public sealed class UniversalLocalizationService : ILocresSerializer
         }
 
         return locres;
+    }
+
+    private static bool IsBinaryBuffer(byte[] buffer)
+    {
+        if (buffer.Length == 0) return false;
+
+        // UTF-16 LE / BE BOM kontrolü (0xFF 0xFE veya 0xFE 0xFF)
+        if (buffer.Length >= 2 && ((buffer[0] == 0xFF && buffer[1] == 0xFE) || (buffer[0] == 0xFE && buffer[1] == 0xFF)))
+        {
+            return false;
+        }
+
+        // UTF-8 BOM (0xEF 0xBB 0xBF)
+        int start = 0;
+        if (buffer.Length >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
+        {
+            start = 3;
+        }
+
+        int nonPrintable = 0;
+        for (int i = start; i < buffer.Length; i++)
+        {
+            byte b = buffer[i];
+            if (b == 0)
+            {
+                return true; // Metin dosyalarında null byte bulunamaz
+            }
+            if (b < 0x08 || (b > 0x0D && b < 0x20) || b == 0x7F)
+            {
+                nonPrintable++;
+            }
+        }
+
+        return buffer.Length > start && ((double)nonPrintable / (buffer.Length - start) > 0.15);
     }
 
     private static string EscapeCsv(string? str) => (str ?? string.Empty).Replace("\"", "\"\"");

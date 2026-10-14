@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using LocalizePak.Core.Interfaces;
 using LocalizePak.Core.Models;
+using LocalizePak.Translation.Services;
 
 namespace LocalizePak.Translation.Providers;
 
@@ -37,8 +38,9 @@ public sealed class ClaudeTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("Anthropic Claude API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var userPrompt = BuildUserPrompt(maskedTexts);
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "MUTLAK ÇIKTI KURALI: Yanıtını SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]. Hiçbir markdown veya açıklama ekleme.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var effort = context.NormalizedReasoningEffort;
         var requestBody = new JsonObject
@@ -190,8 +192,9 @@ public sealed class CustomEndpointTranslationProvider : ITranslationProvider
         TranslationContext context,
         CancellationToken ct = default)
     {
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -202,7 +205,7 @@ public sealed class CustomEndpointTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki {maskedTexts.Count} metni aynı sırada çevir. Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]):\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -313,11 +316,10 @@ public sealed class KimiTranslationProvider : ITranslationProvider
     {
         if (!IsConfigured) throw new InvalidOperationException("Kimi (Moonshot) API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = context.SystemPromptTemplate;
-        if (string.IsNullOrWhiteSpace(systemPrompt))
-            systemPrompt = $"Oyun yerelleştirme uzmanısın. Metinleri {context.TargetLanguageName}'ye çevir. [VAR_X], [TAG_X] etiketlerini koru. Yanıtı SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\"]";
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıtı SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]. Asla açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
         var requestBody = new JsonObject
         {
             ["model"] = _model,
@@ -325,7 +327,7 @@ public sealed class KimiTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki JSON dizisindeki metinleri çevir ve sadece JSON dizisi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -384,11 +386,10 @@ public sealed class QwenTranslationProvider : ITranslationProvider
     {
         if (!IsConfigured) throw new InvalidOperationException("Qwen (DashScope) API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = context.SystemPromptTemplate;
-        if (string.IsNullOrWhiteSpace(systemPrompt))
-            systemPrompt = $"Oyun yerelleştirme uzmanısın. Metinleri {context.TargetLanguageName}'ye çevir. [VAR_X], [TAG_X] etiketlerini koru. Yanıtı SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\"]";
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıtı SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]. Asla açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
         var requestBody = new JsonObject
         {
             ["model"] = _model,
@@ -396,7 +397,7 @@ public sealed class QwenTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki JSON dizisindeki metinleri çevir ve sadece JSON dizisi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -456,8 +457,9 @@ public sealed class GroqTranslationProvider : ITranslationProvider
     {
         if (!IsConfigured) throw new InvalidOperationException("Groq API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -467,7 +469,7 @@ public sealed class GroqTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki {maskedTexts.Count} metni aynı sırada çevir. Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]):\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 

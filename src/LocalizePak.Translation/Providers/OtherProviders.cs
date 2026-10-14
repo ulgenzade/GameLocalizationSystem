@@ -38,7 +38,7 @@ public sealed class OpenAiTranslationProvider : ITranslationProvider
             throw new InvalidOperationException("OpenAI API anahtarı yapılandırılmamış.");
 
         var systemPrompt = BuildSystemPrompt(context);
-        var userPrompt = BuildUserPrompt(maskedTexts);
+        var userPrompt = BuildUserPrompt(maskedTexts, context);
 
         var effort = context.NormalizedReasoningEffort;
         var requestBody = new JsonObject
@@ -80,33 +80,13 @@ public sealed class OpenAiTranslationProvider : ITranslationProvider
 
     private static string BuildSystemPrompt(TranslationContext ctx)
     {
-        var sb = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(ctx.SystemPromptTemplate))
-        {
-            sb.AppendLine(ctx.SystemPromptTemplate);
-        }
-        else
-        {
-            sb.AppendLine($"Profesyonel oyun yerelleştirme uzmanısın. İngilizce metinleri {ctx.TargetLanguageName}'ye çevir.");
-            sb.AppendLine("[VAR_X], [POS_X], [FMT_X], [ESC_X], [TAG_X], [NAME_X] etiketlerini ASLA değiştirme.");
-        }
-        sb.AppendLine("Yanıtı {\"translations\": [\"çeviri 1\", \"çeviri 2\", ...]} formatında bir JSON nesnesi olarak döndür.");
-
-        if (!string.IsNullOrWhiteSpace(ctx.UserDirective))
-            sb.AppendLine($"Özel Direktif: {ctx.UserDirective}");
-
-        if (ctx.Glossary.Any())
-        {
-            sb.AppendLine("Özel isimler:");
-            foreach (var e in ctx.Glossary) sb.AppendLine($"  {e}");
-        }
-        return sb.ToString();
+        return Services.TranslationPromptHelper.BuildSystemPrompt(ctx,
+            "Yanıtı {\"translations\": [\"çeviri 1\", \"çeviri 2\", ...]} formatında bir JSON nesnesi olarak döndür.");
     }
 
-    private static string BuildUserPrompt(IReadOnlyList<string> texts)
+    private static string BuildUserPrompt(IReadOnlyList<string> texts, TranslationContext ctx)
     {
-        var arr = new JsonArray(texts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
-        return $"Aşağıdaki metinleri aynı sırada çevir ve {{\"translations\": [...]}} JSON nesnesi olarak döndür:\n{arr.ToJsonString()}";
+        return Services.TranslationPromptHelper.BuildUserJsonObjectPrompt(texts, ctx);
     }
 
     private static IReadOnlyList<string> ParseResponse(string responseBody, int expectedCount)

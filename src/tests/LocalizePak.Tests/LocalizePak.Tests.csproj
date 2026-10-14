@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\LocalizePak.Core\LocalizePak.Core.csproj" />
     <ProjectReference Include="..\..\LocalizePak.IO\LocalizePak.IO.csproj" />
     <ProjectReference Include="..\..\LocalizePak.Translation\LocalizePak.Translation.csproj" />
+    <ProjectReference Include="..\..\LocalizePak.UI\LocalizePak.UI.csproj" />
   </ItemGroup>
 
 </Project>

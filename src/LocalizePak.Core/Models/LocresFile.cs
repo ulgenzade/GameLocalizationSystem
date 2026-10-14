@@ -10,6 +10,9 @@ public sealed class LocresNamespace
     /// <summary>İsim alanı adı.</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>İsim alanı adının dosyada saklanan 32-bit hash'i (V3). Değiştirilmeden yeniden yazılır.</summary>
+    public uint NameHash { get; set; }
+
     /// <summary>Bu isim alanına ait çeviri girdileri.</summary>
     public List<LocalizationEntry> Entries { get; set; } = [];
 }

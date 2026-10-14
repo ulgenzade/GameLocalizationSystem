@@ -33,13 +33,15 @@ public sealed class PakArchive
     /// <summary>Arşiv içindeki tüm dosya girdileri.</summary>
     public IReadOnlyList<PakEntry> Entries { get; set; } = [];
 
-    /// <summary>Lokalizasyon dosyaları (hiçbiri eşleşmezse tüm dosyaları döndürür).</summary>
+    /// <summary>
+    /// Yalnızca gerçek lokalizasyon/metin dosyalarını döndürür.
+    /// Arşivde lokalizasyon dosyası yoksa boş liste döner (ikili assetler çevrilebilir metin olarak sunulmaz).
+    /// </summary>
     public IReadOnlyList<PakEntry> LocalizationEntries
     {
         get
         {
-            var loc = Entries.Where(e => e.IsLocalizationFile).ToList();
-            return loc.Count > 0 ? loc : Entries;
+            return Entries.Where(e => e.IsLocalizationFile).ToList();
         }
     }
 }

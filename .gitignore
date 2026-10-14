@@ -1,46 +1,70 @@
-# .NET & Visual Studio
+# =====================================================================
+# GameLocalizationSystem (GLS) - Git Ignore Configuration
+# =====================================================================
+
+# --- .NET Build & Publish Outputs ---
 [Bb]in/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
 publish/
+dist/
+TestResults/
 
-# Debug Symbols
+# --- Debug & Native Binary Symbols & Executables ---
 *.pdb
+*.ilk
+*.aps
+*.exe
 
-# User-specific files
+# --- IDEs & Developer Environment ---
+.vs/
+.idea/
+.vscode/
 *.rsuser
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
 *.userprefs
-
-# Visual Studio / Rider / VS Code
-.vs/
-.idea/
-.vscode/
 *.DotSettings.user
 
-# Crash & Temp logs
+# --- Temporary, Crash & Backup Files ---
 crash_log.txt
 *.tmp
 *.log
+*.bak
+*.orig
+Untitled*
+untitled*
 
-# Distribution & Publish
-dist/
-publish/
-
-# Local settings and secrets
+# --- Local Secrets & Personal Configurations ---
 settings.json
 *.local.json
 appsettings*.local.json
+*.env
+*.env.local
 
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Local Research & Draft Notes (kept locally, excluded from git)
+# --- Local Research, AI Dumps & Private Notes ---
+MEMORY.md
 read/
 docs/oku.txt
 docs/README.md
+docs/GLS_v1_Paket/
+docs/Araştırma/
+*.pdf
+
+# --- Large Game Files & Binary Assets (Do NOT commit to git) ---
+*.pak
+*.pck
+*.locres
+*.uasset
+*.umap
+*.bundle
+oo2core*.dll
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/

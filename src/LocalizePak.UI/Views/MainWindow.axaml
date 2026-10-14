@@ -9,8 +9,8 @@
         x:DataType="vm:MainViewModel"
         Title="GLS — Game Localization System"
         Icon="/Assets/glslogo.ico"
-        Width="1420" Height="890"
-        MinWidth="1040" MinHeight="700"
+        Width="1420" Height="880"
+        MinWidth="1280" MinHeight="740"
         Background="Transparent"
         TransparencyLevelHint="Mica, AcrylicBlur"
         DragDrop.AllowDrop="True">
@@ -19,15 +19,15 @@
     <!-- KLAVYE KISAYOLLARI (HOTKEYS)                                       -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <Window.KeyBindings>
-        <KeyBinding Gesture="F5" Command="{Binding StartTranslationCommand}"/>
+        <KeyBinding Gesture="F5" Command="{Binding PrimaryActionCommand}"/>
         <KeyBinding Gesture="F6" Command="{Binding ResumeTranslationCommand}"/>
         <KeyBinding Gesture="F7" Command="{Binding RunQaCheckCommand}"/>
         <KeyBinding Gesture="Ctrl+F" Command="{Binding ToggleFindReplaceCommand}"/>
         <KeyBinding Gesture="Ctrl+H" Command="{Binding ToggleFindReplaceCommand}"/>
-        <KeyBinding Gesture="Ctrl+Enter" Command="{Binding StartTranslationCommand}"/>
+        <KeyBinding Gesture="Ctrl+Enter" Command="{Binding PrimaryActionCommand}"/>
         <KeyBinding Gesture="Ctrl+R" Command="{Binding RetryErrorsCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding TranslateSelectedCommand}"/>
-        <KeyBinding Gesture="Escape" Command="{Binding StopTranslationCommand}"/>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelTranslationCommand}"/>
         <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenPakCommand}"/>
         <KeyBinding Gesture="Ctrl+Shift+O" Command="{Binding OpenSingleFileCommand}"/>
         <KeyBinding Gesture="Ctrl+E" Command="{Binding ExportToTimestampedFolderCommand}"/>
@@ -45,77 +45,10 @@
                 BorderBrush="{DynamicResource CardStrokeBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="12,6">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <DockPanel LastChildFill="True">
 
-                <!-- Logo & GLS Başlık -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="4,0,18,0">
-                    <Border Background="#1AFFFFFF" CornerRadius="8" Width="30" Height="30" VerticalAlignment="Center">
-                        <TextBlock Text="🎮" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <StackPanel VerticalAlignment="Center" Spacing="1">
-                        <TextBlock Text="GLS" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <TextBlock Text="Game Localization System" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
-                    </StackPanel>
-                </StackPanel>
-
-                <!-- WinUI 3 Menü Çubuğu -->
-                <Menu Grid.Column="1" Background="Transparent" VerticalAlignment="Center">
-                    <MenuItem Header="_Dosya">
-                        <MenuItem Header="🗂️  .pak Dosyası Aç... (Ctrl+O)" Command="{Binding OpenPakCommand}"/>
-                        <MenuItem Header="📄  Lokalizasyon Dosyası Aç... (.locres, .json, .csv) (Ctrl+Shift+O)" Command="{Binding OpenSingleFileCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="🚀  Tarihli Klasöre Çıkart (Orijinal İsimle)... (Ctrl+E)" Command="{Binding ExportToTimestampedFolderCommand}"/>
-                        <MenuItem Header="📂  Son Çıktı Klasörünü Aç" Command="{Binding OpenOutputFolderCommand}" IsEnabled="{Binding HasExportedDirectory}"/>
-                        <Separator/>
-                        <MenuItem Header="📥  Çevirileri CSV Olarak Dışa Aktar (Excel)..." Command="{Binding ExportTranslationsCsvCommand}"/>
-                        <MenuItem Header="📤  Düzenlenmiş CSV'yi İçe Aktar..." Command="{Binding ImportTranslationsCsvCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="💾  Farklı Kaydet (Doğrudan Seç)... (Ctrl+S)" Command="{Binding SavePakDirectCommand}"/>
-                        <MenuItem Header="📦  Yama Paketi Olarak Dışa Aktar (_P.pak)..." Command="{Binding ExportPatchCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="🚪  Çıkış" Click="OnExitClick"/>
-                    </MenuItem>
-                    <MenuItem Header="_Düzenle">
-                        <MenuItem Header="🔍  Bul ve Değiştir... (Ctrl+H / Ctrl+F)" Command="{Binding ToggleFindReplaceCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="📋  Kaynak Metni Kopyala" Command="{Binding CopySourceCommand}"/>
-                        <MenuItem Header="📋  Çeviri Metnini Kopyala" Command="{Binding CopyTranslationCommand}"/>
-                        <MenuItem Header="🔄  Orijinal Metni Çeviriye Aktar" Command="{Binding CopySourceToTranslationCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="☑️  Tümünü Seç" Command="{Binding SelectAllFilteredCommand}"/>
-                        <MenuItem Header="⬜  Seçimi Temizle" Command="{Binding DeselectAllCommand}"/>
-                    </MenuItem>
-                    <MenuItem Header="_Çeviri">
-                        <MenuItem Header="⏭️  Kaldığı Yerden Devam Et (F6)" Command="{Binding ResumeTranslationCommand}"/>
-                        <MenuItem Header="▶️  Çevirileri Sıfırdan Başlat (F5)" Command="{Binding StartTranslationCommand}"/>
-                        <MenuItem Header="⏹️  Durdur (Esc)" Command="{Binding StopTranslationCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="🛡️  Kalite Kontrolü (QA) Çalıştır (F7)" Command="{Binding RunQaCheckCommand}"/>
-                        <MenuItem Header="🛠️  Eksik Etiket ve Değişkenleri Otomatik Onar" Command="{Binding AutoFixAllQaIssuesCommand}"/>
-                        <MenuItem Header="✨  Seçili Satırı Yeniden Çevir" Command="{Binding RetranslateSingleCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="⚠️  Hata Raporu Al (CSV)..." Command="{Binding ExportErrorsCsvCommand}"/>
-                        <Separator/>
-                        <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
-                    </MenuItem>
-                    <MenuItem Header="_Ayarlar">
-                        <MenuItem Header="⚙️  AI Motorları ve Tercihler..." Click="OnSettingsClick"/>
-                        <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
-                        <Separator/>
-                        <MenuItem Header="🗑️  Çeviri Belleğini (Hafızayı) Temizle" Command="{Binding ClearTranslationMemoryCommand}"/>
-                    </MenuItem>
-                    <MenuItem Header="_Yardım">
-                        <MenuItem Header="🎮  Canlı Oyundan AES Çıkarıcı (RAM Dumper)..." Click="OnRamAesExtractorClick"/>
-                        <MenuItem Header="🤖  AI Oyun Motoru &amp; AES Dedektifi..." Click="OnAiAesAssistantClick"/>
-                        <MenuItem Header="🔑  AES Anahtarı Nedir ve Nereden Bulunur?" Click="OnAesHelpClick"/>
-                        <Separator/>
-                        <MenuItem Header="📖  Kullanım Kılavuzu (WORKFLOW.md)" Click="OnHelpClick"/>
-                        <MenuItem Header="ℹ️  Hakkında — GLS" Click="OnAboutClick"/>
-                    </MenuItem>
-                </Menu>
-
-                <!-- Sağ Üst: Aktif AI InfoBadge & Düşünme Modu -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,4,0">
+                <!-- Sağ Üst: Aktif AI InfoBadge & Düşünme Modu (Sağ Kenara Kilitli) -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="10,0,4,0">
                     <Border Background="#18FFFFFF" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="8,4">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="12" VerticalAlignment="Center"/>
@@ -129,16 +62,92 @@
                             <TextBlock Text="Düşünme:" Classes="caption" VerticalAlignment="Center"/>
                             <ComboBox ItemsSource="{x:Static vm:MainViewModel.ReasoningEffortOptions}"
                                       SelectedItem="{Binding SelectedReasoningEffort}"
-                                      Width="140"
+                                      Width="175"
                                       ToolTip.Tip="AI Düşünme &amp; Akıl Yürütme Seviyesi (Kapalı / Düşük / Orta / Yüksek)"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
-            </Grid>
+
+                <!-- Sol: Logo & Menü Çubuğu -->
+                <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <!-- Logo & GLS Başlık -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="4,0,0,0">
+                        <Border Background="#1AFFFFFF" CornerRadius="8" Width="30" Height="30" VerticalAlignment="Center">
+                            <TextBlock Text="🎮" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="GLS" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="Game Localization System" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- WinUI 3 Menü Çubuğu -->
+                    <Menu Background="Transparent" VerticalAlignment="Center">
+                        <MenuItem Header="_Dosya">
+                            <MenuItem Header="🗂️  .pak Dosyası Aç... (Ctrl+O)" Command="{Binding OpenPakCommand}"/>
+                            <MenuItem Header="📄  Lokalizasyon Dosyası Aç... (.locres, .json, .csv) (Ctrl+Shift+O)" Command="{Binding OpenSingleFileCommand}"/>
+                            <MenuItem Header="➕  Harici Lokalizasyon Dosyası Ekle..." Command="{Binding AddExternalFileCommand}"/>
+                            <MenuItem Header="✕  Mevcut Dosyayı/Paketi Kapat" Command="{Binding CloseCurrentFileCommand}" IsEnabled="{Binding IsPakLoaded}"/>
+                            <Separator/>
+                            <MenuItem Header="🚀  Tarihli Klasöre Çıkart (Orijinal İsimle)... (Ctrl+E)" Command="{Binding ExportToTimestampedFolderCommand}"/>
+                            <MenuItem Header="📂  Son Çıktı Klasörünü Aç" Command="{Binding OpenOutputFolderCommand}" IsEnabled="{Binding HasExportedDirectory}"/>
+                            <Separator/>
+                            <MenuItem Header="📥  Çevirileri CSV Olarak Dışa Aktar (Excel)..." Command="{Binding ExportTranslationsCsvCommand}"/>
+                            <MenuItem Header="📤  Düzenlenmiş CSV'yi İçe Aktar..." Command="{Binding ImportTranslationsCsvCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="💾  Farklı Kaydet (Doğrudan Seç)... (Ctrl+S)" Command="{Binding SavePakDirectCommand}"/>
+                            <MenuItem Header="📦  Yama Paketi Olarak Dışa Aktar (_P.pak)..." Command="{Binding ExportPatchCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="🚪  Çıkış" Click="OnExitClick"/>
+                        </MenuItem>
+                        <MenuItem Header="_Düzenle">
+                            <MenuItem Header="🔍  Bul ve Değiştir... (Ctrl+H / Ctrl+F)" Command="{Binding ToggleFindReplaceCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="📋  Kaynak Metni Kopyala" Command="{Binding CopySourceCommand}"/>
+                            <MenuItem Header="📋  Çeviri Metnini Kopyala" Command="{Binding CopyTranslationCommand}"/>
+                            <MenuItem Header="🔄  Orijinal Metni Çeviriye Aktar" Command="{Binding CopySourceToTranslationCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="☑️  Tümünü Seç" Command="{Binding SelectAllFilteredCommand}"/>
+                            <MenuItem Header="⬜  Seçimi Temizle" Command="{Binding DeselectAllCommand}"/>
+                        </MenuItem>
+                        <MenuItem Header="_Çeviri">
+                            <MenuItem Header="🚀  Çeviriyi Başlat / Durdur (F5)" Command="{Binding PrimaryActionCommand}"/>
+                            <MenuItem Header="⏭️  Kaldığı Yerden Devam Et" Command="{Binding ResumeTranslationCommand}"/>
+                            <MenuItem Header="⏹️  İptal Et (Esc)" Command="{Binding CancelTranslationCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="🛡️  Kalite Kontrolü (QA) Çalıştır (F7)" Command="{Binding RunQaCheckCommand}"/>
+                            <MenuItem Header="🛠️  Eksik Etiket ve Değişkenleri Otomatik Onar" Command="{Binding AutoFixAllQaIssuesCommand}"/>
+                            <MenuItem Header="🧪  Sahte Yerelleştirme ile Test Et (Pseudolocalization)..." Command="{Binding ApplyPseudolocalizationCommand}" ToolTip.Tip="0 jeton harcayarak metinleri %40 uzatır ve arayüz taşmalarını test eder"/>
+                            <MenuItem Header="✨  Seçili Satırı Yeniden Çevir" Command="{Binding RetranslateSingleCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="⚠️  Hata Raporu Al (CSV)..." Command="{Binding ExportErrorsCsvCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                        </MenuItem>
+                        <MenuItem Header="_Ayarlar">
+                            <MenuItem Header="⚙️  AI Motorları ve Tercihler..." Click="OnSettingsClick"/>
+                            <MenuItem Header="📚  Özel İsimler &amp; Terimler Sözlüğü (Glossary)..." Click="OnGlossaryClick"/>
+                            <Separator/>
+                            <MenuItem Header="🗑️  Çeviri Belleğini (Hafızayı) Temizle" Command="{Binding ClearTranslationMemoryCommand}"/>
+                        </MenuItem>
+                        <MenuItem Header="_Yardım">
+                            <MenuItem Header="💡  Oyun Dosyaları &amp; Yerelleştirme Rehberi (Öğretici)..." Click="OnLocalizationGuideClick"/>
+                            <Separator/>
+                            <MenuItem Header="🔑  AES Anahtar Havuzu (Key Vault)..." Click="OnAesKeyVaultClick"/>
+                            <MenuItem Header="🎮  Canlı Oyundan AES Çıkarıcı (RAM Dumper)..." Click="OnRamAesExtractorClick"/>
+                            <MenuItem Header="🤖  AI Oyun Motoru &amp; AES Dedektifi..." Click="OnAiAesAssistantClick"/>
+                            <MenuItem Header="🔑  AES Anahtarı Nedir ve Nereden Bulunur?" Click="OnAesHelpClick"/>
+                            <Separator/>
+                            <MenuItem Header="📖  Kullanım Kılavuzu (WORKFLOW.md)" Click="OnHelpClick"/>
+                            <MenuItem Header="ℹ️  Hakkında — GLS" Click="OnAboutClick"/>
+                        </MenuItem>
+                    </Menu>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- ─── 2. ANA GÖVDE (SEKMELİ NAVIGATION PANE + SEKMELİ MERKEZİ ÇALIŞMA ALANI) ─── -->
-        <Grid Grid.Row="1" ColumnDefinitions="340,1,*">
+        <Grid Grid.Row="1" ColumnDefinitions="310,1,*">
 
             <!-- ─── SOL PANEL (WINUI 3 SEKMELİ NAVIGATION PANE) ─── -->
             <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}" Padding="10,8">
@@ -149,19 +158,71 @@
                         <ScrollViewer Margin="0,8,0,0">
                             <StackPanel Spacing="10">
 
-                                <!-- Yüklü Paket Bilgi Kartı (WinUI 3 InfoBar Success Stili) -->
-                                <Border Classes="infobar-success" IsVisible="{Binding IsPakLoaded}">
-                                    <StackPanel Spacing="4">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <TextBlock Text="📦" FontSize="14" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding LoadedPakFileName}" FontWeight="Bold" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                            <Border Grid.Column="1" Background="#26FFFFFF" CornerRadius="4" Padding="6,2">
+                                <!-- Yüklü Paket Bilgi Kartı (Başarılı: En az 1 lokalizasyon dosyası var) -->
+                                <Border Classes="infobar-success" IsVisible="{Binding HasLocalizationFiles}">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
+                                            <TextBlock Grid.Column="0" Text="📦" FontSize="14" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding LoadedPakFileName}"
+                                                       FontWeight="Bold"
+                                                       FontSize="12"
+                                                       Foreground="#4CAF50"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip.Tip="{Binding LoadedPakFileName}"/>
+                                            <Border Grid.Column="2" Background="#26FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding LoadedPakSizeInfo}" FontSize="10" FontWeight="SemiBold" Foreground="#E0E0E0"/>
                                             </Border>
+                                            <Button Grid.Column="3"
+                                                    Content="✕"
+                                                    Classes="subtle"
+                                                    Padding="6,2"
+                                                    FontSize="12"
+                                                    Foreground="#FF6B6B"
+                                                    Command="{Binding CloseCurrentFileCommand}"
+                                                    ToolTip.Tip="Mevcut paketi/dosyayı kapat"/>
                                         </Grid>
-                                        <TextBlock Text="✅ Arşiv Başarıyla Ayrıştırıldı ve Hazır" FontSize="11" Foreground="#A5D6A7"/>
+                                        <TextBlock Text="{Binding PakEntries.Count, StringFormat='{}✅ {0} lokalizasyon dosyası başarıyla ayrıştırıldı ve hazır'}"
+                                                   FontSize="11" Foreground="#A5D6A7"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Yüklü Paket Uyarı Kartı (Metin içermeyen ses/grafik chunk paketi) -->
+                                <Border Classes="infobar-warning" IsVisible="{Binding IsEmptyArchive}">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
+                                            <TextBlock Grid.Column="0" Text="📦" FontSize="14" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding LoadedPakFileName}"
+                                                       FontWeight="Bold"
+                                                       FontSize="12"
+                                                       Foreground="#FFB74D"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip.Tip="{Binding LoadedPakFileName}"/>
+                                            <Border Grid.Column="2" Background="#26FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding LoadedPakSizeInfo}" FontSize="10" FontWeight="SemiBold" Foreground="#E0E0E0"/>
+                                            </Border>
+                                            <Button Grid.Column="3"
+                                                    Content="✕"
+                                                    Classes="subtle"
+                                                    Padding="6,2"
+                                                    FontSize="12"
+                                                    Foreground="#FF6B6B"
+                                                    Command="{Binding CloseCurrentFileCommand}"
+                                                    ToolTip.Tip="Mevcut paketi kapat"/>
+                                        </Grid>
+                                        <TextBlock Text="⚠️ Bu arşivde çevrilebilir metin (.locres vb.) bulunamadı (Yalnızca görsel/ses varlıkları içeriyor)."
+                                                   FontSize="11" Foreground="#FFE082" TextWrapping="Wrap"/>
+                                        <Button Content="➕  Dışarıdan Metin Dosyası Ekle (.locres, .json)"
+                                                Classes="secondary"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Padding="0,6"
+                                                FontSize="11"
+                                                Command="{Binding AddExternalFileCommand}"
+                                                ToolTip.Tip="Bu arşivle eşleştirmek istediğiniz harici bir çeviri dosyasını seçin."/>
                                     </StackPanel>
                                 </Border>
 
@@ -174,27 +235,129 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Ana Paket & Dosya Aç Butonları -->
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                <!-- Paket YÜKLÜ DEĞİLKEN: Ana Büyük Aç Butonları -->
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6" IsVisible="{Binding !IsPakLoaded}">
                                     <Button Grid.Column="0" Content="🗂️  .pak Aç"
                                             Classes="accent"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Center"
                                             Padding="0,9"
                                             Command="{Binding OpenPakCommand}"
-                                            IsEnabled="{Binding !IsLoading}"/>
+                                            IsEnabled="{Binding !IsTranslating}"
+                                            ToolTip.Tip="Yeni bir .pak arşivi açar."/>
                                     <Button Grid.Column="1" Content="📄  Dosya Aç"
                                             Classes="secondary"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Center"
                                             Padding="0,9"
                                             Command="{Binding OpenSingleFileCommand}"
-                                            IsEnabled="{Binding !IsLoading}"
+                                            IsEnabled="{Binding !IsTranslating}"
                                             ToolTip.Tip="Doğrudan .locres, .json, .csv, .xml veya .po dosyasını açar."/>
                                 </Grid>
 
-                                <!-- Hızlı Dışa Aktarma & Çıktı Kartı -->
-                                <Border Classes="card" Padding="12">
+                                <!-- Paket YÜKLÜ VE DOSYA VARKEN: Hızlı Dosya Listesi (WinUI 3 Fluent ListBox) -->
+                                <Border Classes="card" Padding="10" IsVisible="{Binding HasLocalizationFiles}">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Classes="caption" Text="Lokalizasyon Dosyaları:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Button Content="💡 Rehber"
+                                                        Classes="tool-btn"
+                                                        Padding="7,3"
+                                                        FontSize="10"
+                                                        Click="OnLocalizationGuideClick"
+                                                        ToolTip.Tip="Hangi dosyayı çevirmeliyim? Game.locres vs Engine.locres öğreticisini aç"/>
+                                                <Border Background="#26FFFFFF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding PakEntries.Count, StringFormat='{}{0} dosya'}" FontSize="10" Foreground="#A0A0A0"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Sekmeli Dil ve Dosya Filtresi (Oyun Dilleri / Motor / Tümü) -->
+                                        <Border Background="#1C1C1C" BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="1" CornerRadius="6" Padding="2">
+                                            <TabControl SelectedIndex="{Binding SelectedArchiveFilterIndex}">
+                                                <TabControl.Styles>
+                                                    <Style Selector="TabControl">
+                                                        <Setter Property="Padding" Value="0"/>
+                                                    </Style>
+                                                    <Style Selector="TabItem">
+                                                        <Setter Property="FontSize" Value="11"/>
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        <Setter Property="Padding" Value="8,4"/>
+                                                        <Setter Property="MinHeight" Value="26"/>
+                                                    </Style>
+                                                </TabControl.Styles>
+                                                <TabItem Header="🌐 Oyun Dilleri (Game)"/>
+                                                <TabItem Header="⚙️ Motor (Engine)"/>
+                                                <TabItem Header="📁 Tümü"/>
+                                            </TabControl>
+                                        </Border>
+
+                                        <!-- Hızlı Rehber İpucu Kutusu -->
+                                        <Border Background="#1400B4D8" BorderBrush="#3300B4D8" BorderThickness="1" CornerRadius="5" Padding="7,5">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <TextBlock Grid.Column="0" Text="💡" FontSize="11" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="İpucu: Türkçe yama için daima 🌐 Oyun Dilleri sekmesindeki ⭐ İngilizce (en) dosyasını seçin."
+                                                           FontSize="10" Foreground="#4CC2FF" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Şık Liste: Tıklanan dosya anında sağdaki tabloya yüklenir -->
+                                        <ListBox ItemsSource="{Binding FilteredPakEntries}"
+                                                 SelectedItem="{Binding SelectedPakEntry}"
+                                                 MaxHeight="260"
+                                                 Background="#161616"
+                                                 BorderBrush="{DynamicResource CardStrokeBrush}"
+                                                 BorderThickness="1"
+                                                 CornerRadius="6"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="2,4">
+                                                        <TextBlock Grid.Column="0" Text="{Binding FileIcon}" FontSize="18" VerticalAlignment="Center"/>
+                                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DisplayTitle}"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding VirtualPath}"/>
+                                                            <TextBlock Text="{Binding DirectoryPath}"
+                                                                       FontSize="10"
+                                                                       Foreground="{DynamicResource TextMutedBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding VirtualPath}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+
+                                        <!-- Ekle & Kaldır Butonları (Ferah, Geniş, Net) -->
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,2,0,0">
+                                            <Button Grid.Column="0" Content="➕  Dosya / .pak Ekle"
+                                                    Classes="secondary"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Center"
+                                                    Padding="0,7"
+                                                    FontSize="11"
+                                                    Command="{Binding AddExternalFileCommand}"
+                                                    ToolTip.Tip="Mevcut listeye dışarıdan bir .pak veya .locres, .json, .csv dosyası ekler."/>
+                                            <Button Grid.Column="1" Content="🗑️  Listeden Kaldır"
+                                                    Classes="subtle"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Center"
+                                                    Padding="0,7"
+                                                    FontSize="11"
+                                                    Foreground="#FF8A80"
+                                                    Command="{Binding RemoveSelectedArchiveFileCommand}"
+                                                    ToolTip.Tip="Seçili olan dosyayı listeden kaldırır."/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Hızlı Dışa Aktarma & Çıktı Kartı (Sadece metin dosyası varsa görünür) -->
+                                <Border Classes="card" Padding="12" IsVisible="{Binding HasLocalizationFiles}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="caption" Text="Çıktı &amp; Yamalama Eylemleri" FontWeight="SemiBold"/>
                                         <Button Content="🚀  Orijinal İsimle Çıktı Al"
@@ -218,13 +381,35 @@
                                     </StackPanel>
                                 </Border>
 
+                                <!-- Paket Yüklüyken: Farklı Arşiv / Dosya Aç Butonları -->
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6" IsVisible="{Binding IsPakLoaded}">
+                                    <Button Grid.Column="0" Content="🔄  Farklı .pak Aç"
+                                            Classes="subtle"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            Padding="0,7"
+                                            FontSize="11"
+                                            Command="{Binding OpenPakCommand}"
+                                            IsEnabled="{Binding !IsTranslating}"
+                                            ToolTip.Tip="Başka bir .pak arşivi açar."/>
+                                    <Button Grid.Column="1" Content="📄  Farklı Dosya Aç"
+                                            Classes="subtle"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            Padding="0,7"
+                                            FontSize="11"
+                                            Command="{Binding OpenSingleFileCommand}"
+                                            IsEnabled="{Binding !IsTranslating}"
+                                            ToolTip.Tip="Başka bir tekil lokalizasyon dosyası açar."/>
+                                </Grid>
+
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
                     <!-- Sekme 2: Arşiv İçeriği (Dosya Ağacı) -->
                     <TabItem Header="📄 Arşiv Dosyaları">
-                        <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
+                        <Grid RowDefinitions="Auto,*,Auto" Margin="0,8,0,0">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,0,6">
                                 <TextBlock Classes="caption" Text="Lokalizasyon Dosyaları" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="1" Classes="caption" Text="{Binding PakEntries.Count, StringFormat='{}{0} dosya'}"/>
@@ -251,6 +436,25 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+                            <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,8,0,0">
+                                <Button Grid.Column="0" Content="➕  Dosya Ekle"
+                                        Classes="secondary"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Padding="0,7"
+                                        FontSize="11"
+                                        Command="{Binding AddExternalFileCommand}"
+                                        ToolTip.Tip="Listeye dışarıdan yeni bir .locres, .json, .csv vb. lokalizasyon dosyası ekler."/>
+                                <Button Grid.Column="1" Content="🗑️  Seçileni Kaldır"
+                                        Classes="subtle"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Padding="0,7"
+                                        FontSize="11"
+                                        Foreground="#FF8A80"
+                                        Command="{Binding RemoveSelectedArchiveFileCommand}"
+                                        ToolTip.Tip="Seçili olan dosyayı listeden kaldırır."/>
+                            </Grid>
                         </Grid>
                     </TabItem>
 
@@ -272,6 +476,12 @@
                                 <Border Classes="card" Padding="12">
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="caption" Text="Canlı Oyun ve AI Araçları" FontWeight="SemiBold"/>
+                                        <Button Content="🔑  AES Anahtar Havuzu (Key Vault)"
+                                                Classes="accent"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Click="OnAesKeyVaultClick"
+                                                ToolTip.Tip="Bilinen yüzlerce popüler oyunun hazır AES-256 şifre havuzu. Çevrimdışı hazır + buluttan tek tıkla güncellenir."/>
                                         <Button Content="🎮  Canlı Oyundan AES Çıkarıcı"
                                                 Classes="secondary"
                                                 HorizontalAlignment="Stretch"
@@ -321,20 +531,20 @@
                                     Margin="0,0,0,8">
                                 <StackPanel Spacing="10">
 
-                                    <!-- 1. Katman: Arama Kutusu, Durum Filtresi, Diller & Hızlı Butonlar -->
-                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                                    <!-- 1. Katman: Arama Kutusu (Esnek), Durum Filtresi, Diller & Birincil Yürütme Butonları -->
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
 
-                                        <!-- Arama Kutusu -->
+                                        <!-- Arama Kutusu (Kalan Tüm Alanı Doldurur ve Esner) -->
                                         <TextBox Grid.Column="0"
                                                  PlaceholderText="🔍  Metinlerde ara..."
                                                  Text="{Binding FilterText}"
-                                                 MinWidth="150"/>
+                                                 MinWidth="130"/>
 
                                         <!-- Gelişmiş Durum Filtresi (Dropdown) -->
                                         <ComboBox Grid.Column="1"
                                                   ItemsSource="{x:Static vm:MainViewModel.StatusFilterOptions}"
                                                   SelectedItem="{Binding SelectedStatusFilter}"
-                                                  Width="165"
+                                                  Width="135"
                                                   ToolTip.Tip="Durum Filtresi (Tümü / Bekleyenler / Tamamlananlar / Hatalar / Manuel / Taşma Riski / QA Hataları)"/>
 
                                         <!-- X ➔ X Dil Seçici Çifti -->
@@ -343,99 +553,111 @@
                                                 <ComboBox ItemsSource="{x:Static vm:MainViewModel.SourceLanguages}"
                                                           SelectedItem="{Binding SelectedSourceLanguage}"
                                                           Width="110" ToolTip.Tip="Kaynak Dil"/>
-                                                <TextBlock Text="➔" FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource AccentHoverBrush}"/>
+                                                <TextBlock Text="➔" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource AccentHoverBrush}"/>
                                                 <ComboBox ItemsSource="{x:Static vm:MainViewModel.TargetLanguages}"
                                                           SelectedItem="{Binding SelectedTargetLanguage}"
                                                           Width="105" ToolTip.Tip="Hedef Dil"/>
                                             </StackPanel>
                                         </Border>
 
-                                        <!-- Toplu Bul ve Değiştir Aç/Kapa Butonu -->
-                                        <Button Grid.Column="3"
-                                                Content="🔍  Bul/Değiştir"
-                                                Classes="secondary"
-                                                Command="{Binding ToggleFindReplaceCommand}"
-                                                Padding="10,6"
-                                                FontSize="12"
-                                                ToolTip.Tip="Toplu Bul ve Değiştir Paneli (Ctrl+H / Ctrl+F)"/>
+                                        <!-- Birincil Çeviri Yürütme Butonları (Sabit Konumlu Dinamik Akıllı CTA) -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 
-                                        <!-- Kalite Kontrol (QA) Çalıştır -->
-                                        <Button Grid.Column="4"
-                                                Content="🛡️  QA (F7)"
-                                                Classes="secondary"
-                                                Command="{Binding RunQaCheckCommand}"
-                                                Padding="10,6"
-                                                FontSize="12"
-                                                Foreground="{DynamicResource AccentHoverBrush}"
-                                                ToolTip.Tip="Eksik değişken ({0}, {PlayerName}) ve kapanmayan HTML etiketlerini tespit eder."/>
+                                            <!-- 1. DOSYA YÜKLENMEMİŞKEN: Buton hep oradadır, deaktif tondadır ama basılabilir (Dosya seçtirir) -->
+                                            <Button Content="🚀  Çeviriyi Başlat (F5)"
+                                                    Classes="play-inactive"
+                                                    Command="{Binding PrimaryActionCommand}"
+                                                    IsVisible="{Binding ShowInactiveStartButton}"
+                                                    Padding="16,7"
+                                                    ToolTip.Tip="Önce bir oyun veya yerelleştirme dosyası (.pak, .locres vb.) açmak için tıklayın"/>
 
-                                        <!-- Otomatik Onar Butonu -->
-                                        <Button Grid.Column="5"
-                                                Content="🛠️  Onar"
-                                                Classes="secondary"
-                                                Command="{Binding AutoFixAllQaIssuesCommand}"
-                                                Padding="10,6"
-                                                FontSize="12"
-                                                Foreground="{DynamicResource SuccessBrush}"
-                                                ToolTip.Tip="Eksik değişken ve etiketleri otomatik olarak satır sonuna tamamlar."/>
+                                            <!-- 2. DOSYA YÜKLÜ VE BOŞTAYKEN: Canlı Mavi Başlat Butonu -->
+                                            <Button Content="🚀  Çeviriyi Başlat (F5)"
+                                                    Classes="play-primary"
+                                                    Command="{Binding PrimaryActionCommand}"
+                                                    IsVisible="{Binding ShowActiveStartButton}"
+                                                    Padding="16,7"
+                                                    ToolTip.Tip="Tüm liste için yapay zeka çevirisini başlatır (F5)"/>
 
-                                        <!-- Diff / Karşılaştır Butonu -->
-                                        <Button Grid.Column="6"
-                                                Content="🔍  Diff"
-                                                Classes="secondary"
-                                                Click="OnInspectDiffClick"
-                                                Padding="10,6"
-                                                FontSize="12"
-                                                ToolTip.Tip="Seçili satırı çift panelli pencerede detaylı inceler."/>
+                                            <!-- 3. ÇEVİRİ AKARKEN: Aynı noktada beliren Canlı Turuncu Durdur/Duraklat Butonu -->
+                                            <Button Content="⏸️  Durdur"
+                                                    Classes="pause-action"
+                                                    Command="{Binding PrimaryActionCommand}"
+                                                    IsVisible="{Binding ShowPauseButton}"
+                                                    Padding="16,7"
+                                                    ToolTip.Tip="Devam eden çeviriyi duraklatır (kaldığı yer korunur) (F5)"/>
+
+                                            <!-- 4. DURAKLATILDIĞINDA: Aynı noktada beliren Canlı Mor/Mavi Devam Et Butonu -->
+                                            <Button Content="▶️  Devam Et (F5)"
+                                                    Classes="resume-primary"
+                                                    Command="{Binding PrimaryActionCommand}"
+                                                    IsVisible="{Binding ShowResumeButton}"
+                                                    Padding="16,7"
+                                                    ToolTip.Tip="Kaldığı yerden çeviriye devam eder (F5)"/>
+
+                                            <!-- 5. İPTAL ET BUTONU: SADECE çeviri çalışırken veya duraklatılmışken YANINDA belirir -->
+                                            <Button Content="⏹️  İptal Et (Esc)"
+                                                    Classes="stop-danger"
+                                                    Command="{Binding CancelTranslationCommand}"
+                                                    IsVisible="{Binding IsCancelButtonVisible}"
+                                                    Padding="14,7"
+                                                    ToolTip.Tip="Devam eden veya duraklatılmış çeviriyi anında iptal eder ve sıfırlar (Esc)"/>
+
+                                        </StackPanel>
                                     </Grid>
 
-                                    <!-- 2. Katman: Seçim Butonları, Özel Çeviriler ve Birincil Yürütme Butonları -->
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <!-- 2. Katman: Tablo Seçim Araçları (Sol) ─── Esnek Boşluk (*) ─── Düzenleme & Kalite Araçları (Sağ) -->
+                                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
 
-                                        <!-- Seçim Kontrolleri -->
+                                        <!-- Sol: Tablo Satır Seçimi ve Seçim Aksiyonları -->
                                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <TextBlock Text="Seçim:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                            <Button Content="☑️  Tümü" Classes="secondary" Command="{Binding SelectAllFilteredCommand}" Padding="10,5" FontSize="11" ToolTip.Tip="Görünen tüm satırları seç"/>
-                                            <Button Content="⚠️  Hatalar" Classes="secondary" Command="{Binding SelectOnlyErrorsCommand}" Padding="10,5" FontSize="11" Foreground="{DynamicResource ErrorBrush}" ToolTip.Tip="Yalnızca hatalı satırları seç"/>
-                                            <Button Content="⬜  Kaldır" Classes="secondary" Command="{Binding DeselectAllCommand}" Padding="10,5" FontSize="11" ToolTip.Tip="Tüm seçimleri temizle"/>
-                                        </StackPanel>
+                                            <TextBlock Text="Seçim:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                            <Button Content="☑️  Tümü" Classes="tool-btn" Command="{Binding SelectAllFilteredCommand}" Padding="8,5" ToolTip.Tip="Görünen tüm satırları seç"/>
+                                            <Button Content="⚠️  Hatalar" Classes="tool-btn" Command="{Binding SelectOnlyErrorsCommand}" Padding="8,5" Foreground="{DynamicResource ErrorBrush}" ToolTip.Tip="Yalnızca hatalı satırları seç"/>
+                                            <Button Content="⬜  Kaldır" Classes="tool-btn" Command="{Binding DeselectAllCommand}" Padding="8,5" ToolTip.Tip="Tüm seçimleri temizle"/>
 
-                                        <!-- Özel Çeviri Aksiyonları -->
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,0,12,0">
+                                            <!-- Ayırıcı Çizgi -->
+                                            <Rectangle Width="1" Height="16" Fill="{DynamicResource CardStrokeBrush}" Margin="4,0"/>
+
                                             <Button Content="✨  Seçilenleri Çevir"
-                                                    Classes="secondary"
+                                                    Classes="tool-btn"
                                                     Command="{Binding TranslateSelectedCommand}"
-                                                    Padding="12,6"
+                                                    Padding="9,5"
                                                     ToolTip.Tip="Yalnızca kutucukla seçtiğiniz satırları çevirir."/>
 
                                             <Button Content="🔄  Hatalıları Tekrar Dene"
-                                                    Classes="secondary"
+                                                    Classes="tool-btn"
                                                     Command="{Binding RetryErrorsCommand}"
                                                     Foreground="{DynamicResource WarningBrush}"
-                                                    Padding="12,6"
+                                                    Padding="9,5"
                                                     ToolTip.Tip="Yalnızca hata alan satırları yeniden dener."/>
                                         </StackPanel>
 
-                                        <!-- Birincil Yürütme Butonları -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                                            <Button Content="⏭️  Devam Et (F6)"
-                                                    Classes="accent"
-                                                    Command="{Binding ResumeTranslationCommand}"
-                                                    Padding="14,6"
-                                                    FontWeight="SemiBold"
-                                                    ToolTip.Tip="Yarım kalmış, bekleyen veya hatalı satırları kaldığı yerden devam ettirir (F6)"/>
+                                        <!-- Orta (Sütun 1): Otomatik Esneyen Boşluk (İki grubu güvenle birbirinden ayırır) -->
 
-                                            <Button Content="▶️  Sıfırdan Başlat (F5)"
-                                                    Classes="secondary"
-                                                    Command="{Binding StartTranslationCommand}"
-                                                    Padding="12,6"
-                                                    ToolTip.Tip="Tüm dosyayı baştan çevirir (F5)"/>
+                                        <!-- Sağ: Bul/Değiştir, Kalite Kontrol (QA), Onarım ve Diff -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="🔍  Bul/Değiştir"
+                                                    Classes="tool-btn"
+                                                    Command="{Binding ToggleFindReplaceCommand}"
+                                                    ToolTip.Tip="Toplu Bul ve Değiştir Paneli (Ctrl+H / Ctrl+F)"/>
 
-                                            <Button Content="⏹️  Durdur (Esc)"
-                                                    Classes="danger"
-                                                    Command="{Binding StopTranslationCommand}"
-                                                    Padding="12,6"
-                                                    ToolTip.Tip="Aktif çeviriyi durdurur (Esc)"/>
+                                            <Button Content="🛡️  QA (F7)"
+                                                    Classes="tool-btn"
+                                                    Command="{Binding RunQaCheckCommand}"
+                                                    Foreground="{DynamicResource AccentHoverBrush}"
+                                                    ToolTip.Tip="Eksik değişken ({0}, {PlayerName}) ve kapanmayan HTML etiketlerini tespit eder."/>
+
+                                            <Button Content="🛠️  Onar"
+                                                    Classes="tool-btn"
+                                                    Command="{Binding AutoFixAllQaIssuesCommand}"
+                                                    Foreground="{DynamicResource SuccessBrush}"
+                                                    ToolTip.Tip="Eksik değişken ve etiketleri otomatik olarak satır sonuna tamamlar."/>
+
+                                            <Button Content="🔍  Diff"
+                                                    Classes="tool-btn"
+                                                    Click="OnInspectDiffClick"
+                                                    ToolTip.Tip="Seçili satırı çift panelli pencerede detaylı inceler."/>
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>
@@ -720,7 +942,7 @@
 
                                             <Grid ColumnDefinitions="*,Auto" Margin="0,2">
                                                 <TextBlock Text="Kaynak / Hedef Dil:" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding SelectedSourceLanguage, StringFormat='{}{0} ➔ Türkçe'}" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding LanguagePairDisplay}" FontWeight="SemiBold"/>
                                             </Grid>
                                         </StackPanel>
                                     </Border>

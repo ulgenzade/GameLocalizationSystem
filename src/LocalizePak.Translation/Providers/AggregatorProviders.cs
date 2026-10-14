@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using LocalizePak.Core.Interfaces;
 using LocalizePak.Core.Models;
+using LocalizePak.Translation.Services;
 
 namespace LocalizePak.Translation.Providers;
 
@@ -44,8 +45,9 @@ public sealed class TogetherAiTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("Together AI API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -55,7 +57,7 @@ public sealed class TogetherAiTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki metin dizisini çevir ve SADECE JSON dizisi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -151,8 +153,9 @@ public sealed class MistralTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("Mistral AI API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıtı {\"translations\": [\"çeviri 1\", \"çeviri 2\", ...]} formatında bir JSON nesnesi olarak döndür.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonObjectPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -163,7 +166,7 @@ public sealed class MistralTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Aşağıdaki metinleri çevir ve {{\"translations\": [...]}} JSON nesnesi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -253,8 +256,9 @@ public sealed class DeepInfraTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("DeepInfra API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -264,7 +268,7 @@ public sealed class DeepInfraTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Çevir ve JSON dizisi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 
@@ -354,8 +358,9 @@ public sealed class PerplexityTranslationProvider : ITranslationProvider
         if (!IsConfigured)
             throw new InvalidOperationException("Perplexity AI API anahtarı yapılandırılmamış.");
 
-        var systemPrompt = BuildSystemPrompt(context);
-        var arr = new JsonArray(maskedTexts.Select(t => (JsonNode?)JsonValue.Create(t)).ToArray());
+        var systemPrompt = TranslationPromptHelper.BuildSystemPrompt(context,
+            "Yanıt olarak SADECE ve SADECE JSON dizisi döndür ([\"çeviri 1\", \"çeviri 2\", ...]). Asla markdown veya açıklama yazma.");
+        var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
         var requestBody = new JsonObject
         {
@@ -365,7 +370,7 @@ public sealed class PerplexityTranslationProvider : ITranslationProvider
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = systemPrompt },
-                new JsonObject { ["role"] = "user", ["content"] = $"Çevir ve SADECE JSON dizisi olarak döndür:\n{arr.ToJsonString()}" }
+                new JsonObject { ["role"] = "user", ["content"] = userPrompt }
             }
         };
 

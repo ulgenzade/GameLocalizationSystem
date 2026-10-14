@@ -6,12 +6,13 @@
         x:DataType="vm:RamAesExtractorViewModel"
         Title="🎮 Canlı Oyundan AES Çıkarıcı (RAM Dumper) — GLS"
         Icon="/Assets/glslogo.ico"
-        Width="780" Height="680"
+        Width="780" Height="720"
+        MinWidth="680" MinHeight="600"
         WindowStartupLocation="CenterOwner"
         Background="Transparent"
         TransparencyLevelHint="Mica, AcrylicBlur">
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20,16">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" Background="{DynamicResource WindowBackgroundBrush}" Margin="20,16">
 
         <!-- Başlık -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
@@ -31,7 +32,7 @@
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="14,10"
-                Margin="0,0,0,14">
+                Margin="0,0,0,12">
             <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Grid.Column="0" Text="⚠️" FontSize="22" VerticalAlignment="Top" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="1" Spacing="4">
@@ -48,8 +49,42 @@
             </Grid>
         </Border>
 
-        <!-- Çalışan Oyunlar / Süreçler Listesi -->
+        <!-- Paket ve Exe Seçimi -->
         <Border Grid.Row="2"
+                Background="{DynamicResource CardBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12,10"
+                Margin="0,0,0,12">
+            <StackPanel Spacing="8">
+                <!-- Doğrulama Paketi Seçimi (.pak) -->
+                <Grid ColumnDefinitions="140,*,Auto">
+                    <TextBlock Grid.Column="0" Text="📦  Paket Dosyası:" VerticalAlignment="Center"
+                               FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBox Grid.Column="1" Text="{Binding PakFilePath}"
+                             PlaceholderText="Anahtarı doğrulamak için oyunun .pak dosyasını seçin..."
+                             IsReadOnly="True"
+                             FontSize="12"
+                             Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="📁  Gözat..." Classes="secondary" Click="OnBrowsePakClick"/>
+                </Grid>
+
+                <!-- Oyun Exe Seçimi (.exe) — Statik Hızlı Tarama İçin -->
+                <Grid ColumnDefinitions="140,*,Auto">
+                    <TextBlock Grid.Column="0" Text="⚡  Oyun Exe'si (Statik):" VerticalAlignment="Center"
+                               FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource AccentHoverBrush}"/>
+                    <TextBox Grid.Column="1" Text="{Binding ExeFilePath}"
+                             PlaceholderText="Oyunu çalıştırmadan 0.4 sn'de taramak için oyunun .exe dosyasını seçin (veya alttan süreci tıklayın)..."
+                             FontSize="12"
+                             Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="📁  Gözat..." Classes="secondary" Click="OnBrowseExeClick"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Çalışan Oyunlar / Süreçler Listesi -->
+        <Border Grid.Row="3"
                 Background="{DynamicResource CardBrush}"
                 BorderBrush="{DynamicResource CardStrokeBrush}"
                 BorderThickness="1"
@@ -97,7 +132,7 @@
         </Border>
 
         <!-- Tarama ve İlerleme -->
-        <StackPanel Grid.Row="3" Spacing="8" Margin="0,0,0,12">
+        <StackPanel Grid.Row="4" Spacing="8" Margin="0,0,0,12">
             <ProgressBar Value="{Binding ScanProgress}" Maximum="100" Height="6"
                          IsVisible="{Binding IsScanning}"
                          Foreground="{DynamicResource AccentHoverBrush}"/>
@@ -108,7 +143,7 @@
         </StackPanel>
 
         <!-- Sonuç & Eylemler -->
-        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0">
+        <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4,0,0">
             <!-- Bulunan Anahtar -->
             <TextBox Grid.Column="0"
                      IsReadOnly="True"
@@ -118,16 +153,32 @@
                      FontSize="12"
                      Margin="0,0,8,0"/>
 
-            <!-- Tara Butonu -->
+            <!-- ⚡ Exe'den Statik Tara Butonu (Önerilen) -->
             <Button Grid.Column="1"
-                    Content="🚀  Belleği Tara"
+                    Content="⚡  Exe'den Statik Tara (0.4 sn)"
                     Classes="accent"
+                    Command="{Binding StartStaticExeScanCommand}"
+                    IsVisible="{Binding !IsScanning}"
+                    Margin="0,0,8,0"/>
+
+            <!-- RAM Tara Butonu -->
+            <Button Grid.Column="2"
+                    Content="🚀  Belleği Tara (RAM)"
+                    Classes="secondary"
                     Command="{Binding StartScanCommand}"
-                    IsEnabled="{Binding !IsScanning}"
+                    IsVisible="{Binding !IsScanning}"
+                    Margin="0,0,8,0"/>
+
+            <!-- Durdur Butonu -->
+            <Button Grid.Column="1"
+                    Content="⏹️  Durdur"
+                    Classes="danger"
+                    Command="{Binding CancelScanCommand}"
+                    IsVisible="{Binding IsScanning}"
                     Margin="0,0,8,0"/>
 
             <!-- Anahtarı Uygula -->
-            <Button Grid.Column="2"
+            <Button Grid.Column="3"
                     Content="✅  Anahtarı Uygula"
                     Classes="secondary"
                     Command="{Binding ApplyKeyCommand}"

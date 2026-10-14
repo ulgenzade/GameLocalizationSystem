@@ -43,24 +43,236 @@
         <Setter Property="Foreground" Value="White"/>
     </Style>
 
-    <Style Selector="Button.primary">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+    <!-- ─── YENİ: DİNAMİK CANLI BİRİNCİL ÇEVİRİ BAŞLAT BUTONU (CANLI GRADIENT) ─── -->
+    <Style Selector="Button.play-primary">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#0078D4" Offset="0.0"/>
+                <GradientStop Color="#00B4D8" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#4DFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="16,7"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.play-primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#0086E8" Offset="0.0"/>
+                <GradientStop Color="#00C8F0" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#80FFFFFF"/>
+    </Style>
+    <Style Selector="Button.play-primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#005A9E" Offset="0.0"/>
+                <GradientStop Color="#008EB0" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+
+    <!-- ─── YENİ: DOSYA YÜKLENMEMİŞKEN BAŞLAT BUTONU (PASİF/DEAKTİF TON, AMA BASILABİLİR) ─── -->
+    <Style Selector="Button.play-inactive">
+        <Setter Property="Background" Value="#252525"/>
+        <Setter Property="Foreground" Value="#888888"/>
+        <Setter Property="BorderBrush" Value="#383838"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="16,7"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                <BrushTransition Property="Foreground" Duration="0:0:0.15"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
     </Style>
-    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
-        <Setter Property="Foreground" Value="#0A0A0A"/>
+    <Style Selector="Button.play-inactive:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#323232"/>
+        <Setter Property="Foreground" Value="#CCCCCC"/>
+        <Setter Property="BorderBrush" Value="#555555"/>
     </Style>
-    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+    <Style Selector="Button.play-inactive:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#1F1F1F"/>
+        <Setter Property="Foreground" Value="#999999"/>
+    </Style>
+
+    <!-- ─── YENİ: DİNAMİK DURDUR/DURAKLAT BUTONU (CANLI TURUNCU/KEHRİBAR GRADİENT) ─── -->
+    <Style Selector="Button.pause-action">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#D83B01" Offset="0.0"/>
+                <GradientStop Color="#EA5E00" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#4DFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="16,7"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.pause-action:pointerover /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#EA5E00" Offset="0.0"/>
+                <GradientStop Color="#FF7828" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#80FFFFFF"/>
+    </Style>
+    <Style Selector="Button.pause-action:pressed /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#B83000" Offset="0.0"/>
+                <GradientStop Color="#C94F00" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+
+    <!-- ─── YENİ: DİNAMİK KALDIĞI YERDEN DEVAM ET BUTONU (İNDİGO / MOR GRADİENT) ─── -->
+    <Style Selector="Button.resume-primary">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#5B5FC7" Offset="0.0"/>
+                <GradientStop Color="#0078D4" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#4DFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="16,7"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.resume-primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#6E73E6" Offset="0.0"/>
+                <GradientStop Color="#0086E8" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#80FFFFFF"/>
+    </Style>
+    <Style Selector="Button.resume-primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#4A4E9E" Offset="0.0"/>
+                <GradientStop Color="#005A9E" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+
+    <!-- ─── YENİ: DİNAMİK DURDUR BUTONU (CANLI PARLAYAN KIRMIZI / CRITICAL GRADIENT) ─── -->
+    <Style Selector="Button.stop-danger">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#D13438" Offset="0.0"/>
+                <GradientStop Color="#A4262C" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#4DFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.stop-danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#E81123" Offset="0.0"/>
+                <GradientStop Color="#C42B1C" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#80FFFFFF"/>
+    </Style>
+    <Style Selector="Button.stop-danger:pressed /template/ ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#A4262C" Offset="0.0"/>
+                <GradientStop Color="#77191E" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Setter>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+    </Style>
+    <Style Selector="Button.stop-danger:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="#252525"/>
+        <Setter Property="Foreground" Value="#666666"/>
+        <Setter Property="BorderBrush" Value="#333333"/>
+    </Style>
+
+    <!-- ─── YENİ: MODERN ARAÇ BUTONU (TOOL BUTTON: QA, DİFF, BUL/DEĞİŞTİR VB.) ─── -->
+    <Style Selector="Button.tool-btn">
+        <Setter Property="Background" Value="#222222"/>
+        <Setter Property="Foreground" Value="#E0E0E0"/>
+        <Setter Property="BorderBrush" Value="#383838"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Padding" Value="9,5"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.tool-btn:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#303030"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="#555555"/>
+    </Style>
+    <Style Selector="Button.tool-btn:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#1A1A1A"/>
+        <Setter Property="Foreground" Value="#CCCCCC"/>
+        <Setter Property="BorderBrush" Value="#303030"/>
     </Style>
 
     <!-- WinUI 3 Standart Buton (Default Button) -->
