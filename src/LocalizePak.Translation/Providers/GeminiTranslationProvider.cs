@@ -69,7 +69,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
         var effort = context.NormalizedReasoningEffort;
 
         var cacheName = await GetOrCreateCacheAsync(systemInstruction, ct);
-        var requestBody = BuildRequestBody(systemInstruction, userPrompt, effort, cacheName);
+        var requestBody = BuildRequestBody(_model, systemInstruction, userPrompt, effort, cacheName);
 
         var (response, responseBody) = await PostGenerateAsync(_model, requestBody, ct);
 
@@ -87,7 +87,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
             else
                 await DisableCacheAsync(cacheName, systemInstruction, $"Önbellekli istek reddedildi ({status}): {Excerpt(responseBody)}");
 
-            requestBody = BuildRequestBody(systemInstruction, userPrompt, effort, cachedContentName: null);
+            requestBody = BuildRequestBody(_model, systemInstruction, userPrompt, effort, cachedContentName: null);
             (response, responseBody) = await PostGenerateAsync(_model, requestBody, ct);
         }
 
@@ -106,7 +106,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
                     : "gemini-3.5-flash-lite";
 
                 // Önbellekler modele bağlıdır; yedek model her zaman önbelleksiz (inline) istekle denenir.
-                var fallbackBody = BuildRequestBody(systemInstruction, userPrompt, effort, cachedContentName: null);
+                var fallbackBody = BuildRequestBody(fallbackModel, systemInstruction, userPrompt, effort, cachedContentName: null);
                 var (fallbackResponse, fallbackResponseBody) = await PostGenerateAsync(fallbackModel, fallbackBody, ct);
                 using var __ = fallbackResponse;
 
@@ -149,7 +149,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
     /// generateContent istek gövdesini oluşturur. <paramref name="cachedContentName"/> verildiğinde sistem talimatı
     /// gövdeye EKLENMEZ (önbelleğin içindedir; Gemini ikisinin birlikte gönderilmesini reddeder).
     /// </summary>
-    public static JsonObject BuildRequestBody(string systemInstruction, string userPrompt, string effort, string? cachedContentName)
+    public static JsonObject BuildRequestBody(string model, string systemInstruction, string userPrompt, string effort, string? cachedContentName)
     {
         var genConfig = new JsonObject
         {
@@ -172,13 +172,15 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
                 ["thinkingBudget"] = budget
             };
         }
-        else
+        else if (SupportsThinkingOff(model))
         {
             genConfig["thinkingConfig"] = new JsonObject
             {
                 ["thinkingBudget"] = 0
             };
         }
+        // Gemini 3.x ve sonrası düşünmenin tamamen kapatılmasına izin vermez (thinkingBudget: 0 → 400 INVALID_ARGUMENT);
+        // "Kapalı" seçiliyse thinkingConfig hiç gönderilmez ve modelin varsayılan (en hafif) düşünme seviyesi kullanılır.
 
         var requestBody = new JsonObject();
 
@@ -220,6 +222,14 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
 
         return requestBody;
     }
+
+    /// <summary>
+    /// thinkingBudget: 0 ile düşünme tamamen kapatılabilir mi? Yalnızca Gemini 1.x / 2.x modellerinde.
+    /// (Canlı doğrulandı: gemini-3.5-flash-lite budget 0'ı 400 INVALID_ARGUMENT ile reddediyor.)
+    /// </summary>
+    public static bool SupportsThinkingOff(string model) =>
+        model.StartsWith("gemini-1", StringComparison.OrdinalIgnoreCase) ||
+        model.StartsWith("gemini-2", StringComparison.OrdinalIgnoreCase);
 
     // ─── Explicit Context Caching ────────────────────────────────────────────
 
