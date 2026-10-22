@@ -823,6 +823,7 @@ public sealed partial class MainViewModel
         if (item == null) return;
         item.Model.Status = TranslationStatus.Done;
         item.RefreshFromModel();
+        RecountStatuses();
     }
 
     [RelayCommand]
@@ -832,6 +833,7 @@ public sealed partial class MainViewModel
         if (item == null) return;
         item.Model.Status = TranslationStatus.Pending;
         item.RefreshFromModel();
+        RecountStatuses();
     }
 
     public static async Task SetClipboardTextAsync(string text)
