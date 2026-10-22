@@ -607,9 +607,7 @@ public sealed partial class MainViewModel
             RecoveryService.ClearRecoverySnapshot();
             EstimatedTimeRemaining = "Tamamlandı";
             IsPaused = false;
-            StatusMessage = $"İşlem tamamlandı! Süre: {ElapsedTime}, {CompletedEntries}/{entries.Count} satır başarıyla çevrildi, {ErrorCount} hata.";
-            if (provider is IPromptCacheReporter cacheReporter && cacheReporter.CacheStats.ToSummary() is { Length: > 0 } cacheSummary)
-                StatusMessage += $" {cacheSummary}";
+            StatusMessage = WithCacheSummary($"İşlem tamamlandı! Süre: {ElapsedTime}, {CompletedEntries}/{entries.Count} satır başarıyla çevrildi, {ErrorCount} hata.", provider);
         }
         catch (OperationCanceledException)
         {
@@ -625,7 +623,7 @@ public sealed partial class MainViewModel
                 else
                 {
                     IsPaused = false;
-                    StatusMessage = "Çeviri kullanıcı tarafından iptal edildi.";
+                    StatusMessage = WithCacheSummary("Çeviri kullanıcı tarafından iptal edildi.", provider);
                     EstimatedTimeRemaining = "İptal Edildi";
                 }
             });
@@ -633,7 +631,7 @@ public sealed partial class MainViewModel
         catch (Exception ex)
         {
             sw.Stop();
-            StatusMessage = $"Çeviri hatası: {ex.Message}";
+            StatusMessage = WithCacheSummary($"Çeviri hatası: {ex.Message}", provider);
         }
         finally
         {
@@ -652,6 +650,12 @@ public sealed partial class MainViewModel
             RefreshStats();
         }
     }
+
+    /// <summary>Sağlayıcı önbellek raporluyorsa (Claude / Gemini) durum mesajına önbellek özetini ekler.</summary>
+    private static string WithCacheSummary(string message, ITranslationProvider provider) =>
+        provider is IPromptCacheReporter reporter && reporter.CacheStats.ToSummary() is { Length: > 0 } summary
+            ? $"{message} {summary}"
+            : message;
 
     public static string MapLanguageToIsoCode(string? languageName) =>
         TranslationPromptHelper.MapLanguageToIsoCode(languageName);

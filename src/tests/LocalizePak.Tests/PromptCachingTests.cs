@@ -219,6 +219,62 @@ public class PromptCachingTests
             Assert.NotNull(body["system_instruction"]);
             Assert.Null(body["cachedContent"]);
         }
+        Assert.Contains("Cached content is too small", provider.CacheStats.CacheDisabledReason);
+    }
+
+    [Fact]
+    public async Task GeminiTranslate_CacheCreationRateLimited_DisablesCacheForSession()
+    {
+        // Ücretsiz katman: explicit önbellek kotası 0 → 429. Her batch'te yeniden denemek istek kotasını tüketir.
+        var handler = new StubHandler(r => r.Url.EndsWith("/cachedContents")
+            ? Json(HttpStatusCode.TooManyRequests, """{"error":{"code":429,"message":"Quota exceeded for metric: TotalCachedContentStorageTokensPerModelFreeTier, limit: 0","status":"RESOURCE_EXHAUSTED"}}""")
+            : Json(HttpStatusCode.OK, GeminiOkResponse));
+        var provider = new GeminiTranslationProvider(new HttpClient(handler));
+        provider.Configure("test-key", "gemini-3.5-flash-lite");
+        var context = LargeLoreContext();
+
+        await provider.TranslateBatchAsync(["Hello"], context);
+        await provider.TranslateBatchAsync(["World"], context);
+        await provider.TranslateBatchAsync(["Again"], context);
+
+        Assert.Single(handler.Requests, r => r.Url.EndsWith("/cachedContents"));
+        Assert.Equal(3, handler.Requests.Count(r => r.Url.Contains(":generateContent")));
+        Assert.Contains("FreeTier", provider.CacheStats.CacheDisabledReason);
+    }
+
+    [Fact]
+    public async Task GeminiTranslate_CacheCreationServerError_RetriesOnNextBatch()
+    {
+        int creates = 0;
+        var handler = new StubHandler(r => r.Url.EndsWith("/cachedContents")
+            ? (++creates == 1
+                ? Json(HttpStatusCode.ServiceUnavailable, """{"error":{"code":503,"message":"overloaded"}}""")
+                : Json(HttpStatusCode.OK, """{"name":"cachedContents/ok"}"""))
+            : Json(HttpStatusCode.OK, GeminiOkResponse));
+        var provider = new GeminiTranslationProvider(new HttpClient(handler));
+        provider.Configure("test-key", "gemini-3.5-flash-lite");
+        var context = LargeLoreContext();
+
+        await provider.TranslateBatchAsync(["Hello"], context);
+        await provider.TranslateBatchAsync(["World"], context);
+
+        Assert.Equal(2, creates);
+        var last = JsonNode.Parse(handler.Requests.Last(r => r.Url.Contains(":generateContent")).Body)!;
+        Assert.Equal("cachedContents/ok", last["cachedContent"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task GeminiTranslate_GenerateRateLimited_ErrorMessageIncludesApiDetail()
+    {
+        var handler = new StubHandler(_ => Json(HttpStatusCode.TooManyRequests,
+            """{"error":{"code":429,"message":"Quota exceeded for metric: generate_content_free_tier_requests, limit: 15","status":"RESOURCE_EXHAUSTED"}}"""));
+        var provider = new GeminiTranslationProvider(new HttpClient(handler));
+        provider.Configure("test-key", "gemini-3.5-flash-lite");
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => provider.TranslateBatchAsync(["Hello"], SmallContext()));
+
+        Assert.Contains("generate_content_free_tier_requests", ex.Message);
+        Assert.DoesNotContain("test-key", ex.Message);
     }
 
     [Fact]

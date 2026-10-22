@@ -31,6 +31,9 @@ public sealed class PromptCacheStats
     /// <summary>İstem token'larının önbellekten okunan oranı (0.0 – 1.0).</summary>
     public double CacheHitRatio => TotalInputTokens == 0 ? 0 : CacheReadTokens / (double)TotalInputTokens;
 
+    /// <summary>Önbellek oluşturulamadıysa nedeni (kullanıcıya gösterilir); yoksa null.</summary>
+    public string? CacheDisabledReason { get; private set; }
+
     public void Record(long uncachedInputTokens, long cacheReadTokens, long cacheWriteTokens)
     {
         Interlocked.Increment(ref _requests);
@@ -39,12 +42,20 @@ public sealed class PromptCacheStats
         Interlocked.Add(ref _cacheWriteTokens, Math.Max(0, cacheWriteTokens));
     }
 
-    /// <summary>Durum çubuğu için kısa özet. Hiç önbellek okuması yoksa boş döner.</summary>
+    public void RecordCacheDisabled(string reason) => CacheDisabledReason = reason;
+
+    /// <summary>
+    /// Durum çubuğu için kısa özet. Önbellek okuması varsa oranı, önbellek devre dışı kaldıysa nedenini,
+    /// ikisi de yoksa boş metin döner.
+    /// </summary>
     public string ToSummary()
     {
-        if (CacheReadTokens == 0)
-            return string.Empty;
+        if (CacheReadTokens > 0)
+            return $"💾 Önbellek: {CacheReadTokens:N0} / {TotalInputTokens:N0} istem token'ı önbellekten okundu (%{CacheHitRatio * 100:F0}).";
 
-        return $"💾 Önbellek: {CacheReadTokens:N0} / {TotalInputTokens:N0} istem token'ı önbellekten okundu (%{CacheHitRatio * 100:F0}).";
+        if (CacheDisabledReason != null)
+            return $"💾 Önbellek kullanılamadı: {CacheDisabledReason}";
+
+        return string.Empty;
     }
 }
