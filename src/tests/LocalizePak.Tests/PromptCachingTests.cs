@@ -365,6 +365,33 @@ public class PromptCachingTests
         Assert.DoesNotContain(handler.Requests, r => r.Url.EndsWith("/cachedContents"));
     }
 
+    [Theory]
+    [InlineData("gemini-3.5-flash-lite")]
+    [InlineData("gemini-3.8-flash")]
+    [InlineData("gemini-4-argon")]
+    public void GeminiBuildRequestBody_ThinkingOff_Gemini3Plus_OmitsThinkingConfig(string model)
+    {
+        var body = GeminiTranslationProvider.BuildRequestBody(model, "S", "U", "off", cachedContentName: null);
+
+        Assert.Null(body["generationConfig"]!["thinkingConfig"]);
+    }
+
+    [Fact]
+    public void GeminiBuildRequestBody_ThinkingOff_Gemini2_SendsZeroBudget()
+    {
+        var body = GeminiTranslationProvider.BuildRequestBody("gemini-2.5-flash", "S", "U", "off", cachedContentName: null);
+
+        Assert.Equal(0, body["generationConfig"]!["thinkingConfig"]!["thinkingBudget"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void GeminiBuildRequestBody_ThinkingLow_SendsBudgetOnAnyModel()
+    {
+        var body = GeminiTranslationProvider.BuildRequestBody("gemini-3.5-flash-lite", "S", "U", "low", cachedContentName: null);
+
+        Assert.Equal(1024, body["generationConfig"]!["thinkingConfig"]!["thinkingBudget"]!.GetValue<int>());
+    }
+
     [Fact]
     public void GeminiRecordCacheUsage_SplitsPromptIntoCachedAndUncached()
     {
