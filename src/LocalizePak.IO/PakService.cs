@@ -416,16 +416,20 @@ public sealed class PakService : IPakReader, IPakWriter
             using var ms = new MemoryStream(data, skip, data.Length - skip - trim);
             using var deflate = new DeflateStream(ms, CompressionMode.Decompress);
             var output = new MemoryStream((int)Math.Max(64, uncompressedSize));
-            deflate.CopyTo(output);
+            SafeIo.CopyBounded(deflate, output, SafeIo.DecompressionLimit(uncompressedSize));
             output.Position = 0;
             return output;
+        }
+        catch (DecompressionLimitExceededException)
+        {
+            throw; // Sıkıştırma bombası: ikinci yöntemle yeniden açmayı deneme
         }
         catch
         {
             using var ms = new MemoryStream(data);
             using var deflate = new DeflateStream(ms, CompressionMode.Decompress);
             var output = new MemoryStream((int)Math.Max(64, uncompressedSize));
-            deflate.CopyTo(output);
+            SafeIo.CopyBounded(deflate, output, SafeIo.DecompressionLimit(uncompressedSize));
             output.Position = 0;
             return output;
         }

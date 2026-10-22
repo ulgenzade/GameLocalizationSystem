@@ -3,6 +3,7 @@ using System.Text;
 using K4os.Compression.LZ4;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO.Helpers;
 
 namespace LocalizePak.IO.Formats;
 
@@ -175,7 +176,8 @@ public sealed class LSPakHandler
 
         // Standart dosya formatı
         if (entry.DataOffset < 0 || entry.DataOffset >= fs.Length ||
-            entry.CompressedSize <= 0 || entry.DataOffset + entry.CompressedSize > fs.Length)
+            entry.CompressedSize <= 0 || entry.CompressedSize > SafeIo.MaxEntrySize ||
+            entry.DataOffset + entry.CompressedSize > fs.Length)
         {
             return new MemoryStream();
         }
@@ -230,6 +232,7 @@ public sealed class LSPakHandler
     private static MemoryStream SafeDecompressZlib(byte[] data, long uncompressedSize)
     {
         int initialCap = (int)Math.Clamp(uncompressedSize, 64, 50_000_000);
+        long limit = SafeIo.DecompressionLimit(uncompressedSize);
 
         // 1. Standart ZLibStream (.NET 8 yerel RFC 1950)
         try
@@ -237,7 +240,7 @@ public sealed class LSPakHandler
             using var ms = new MemoryStream(data);
             using var zlib = new ZLibStream(ms, CompressionMode.Decompress);
             var outMs = new MemoryStream(initialCap);
-            zlib.CopyTo(outMs);
+            SafeIo.CopyBounded(zlib, outMs, limit);
             outMs.Seek(0, SeekOrigin.Begin);
             if (outMs.Length > 0) return outMs;
         }
@@ -251,7 +254,7 @@ public sealed class LSPakHandler
             using var ms = new MemoryStream(data, skip, data.Length - skip - endTrim);
             using var def = new DeflateStream(ms, CompressionMode.Decompress);
             var outMs = new MemoryStream(initialCap);
-            def.CopyTo(outMs);
+            SafeIo.CopyBounded(def, outMs, limit);
             outMs.Seek(0, SeekOrigin.Begin);
             if (outMs.Length > 0) return outMs;
         }

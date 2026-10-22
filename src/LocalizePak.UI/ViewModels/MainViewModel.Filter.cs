@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalizePak.Core.Enums;
@@ -43,16 +44,30 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private int _errorCount;
 
-    public int PendingEntries => Math.Max(0, TotalEntries - CompletedEntries - ErrorCount);
-    public int ManuallyEditedCount => LocalizationEntries.Count(e => e.Status == TranslationStatus.ManuallyEdited);
-    public int QaIssueCount => LocalizationEntries.Count(e => e.HasQaIssue);
-    public int OverflowRiskCount => LocalizationEntries.Count(e => e.IsOverflowRisk);
-    public double CompletionPercentage => TotalEntries == 0 ? 0 : Math.Round((double)CompletedEntries / TotalEntries * 100, 1);
-    public int TotalSourceWords => LocalizationEntries.Sum(e => e.SourceText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
-    public int TotalSourceChars => LocalizationEntries.Sum(e => e.SourceText.Length);
+    // İstatistikler artık her bağlama okumasında yeniden hesaplanmıyor: tek geçişte hesaplanıp önbelleğe alınıyor.
+    // (QaIssueCount arayüzde 3 yerde bağlı; eskiden her ilerleme raporunda 22.000 satırda regex QA 3 kez koşuyordu.)
+    private int _manuallyEditedCount;
+    private int _qaIssueCount;
+    private int _overflowRiskCount;
+    private int _totalSourceWords;
+    private int _totalSourceChars;
+    private ObservableCollection<LocalizationEntryViewModel>? _sourceStatsFor;
+    private int _sourceStatsCount = -1;
 
+    public int PendingEntries => Math.Max(0, TotalEntries - CompletedEntries - ErrorCount);
+    public int ManuallyEditedCount => _manuallyEditedCount;
+    public int QaIssueCount => _qaIssueCount;
+    public int OverflowRiskCount => _overflowRiskCount;
+    public double CompletionPercentage => TotalEntries == 0 ? 0 : Math.Round((double)CompletedEntries / TotalEntries * 100, 1);
+    public int TotalSourceWords => _totalSourceWords;
+    public int TotalSourceChars => _totalSourceChars;
+
+    /// <summary>İstatistikleri tek geçişte yeniden hesaplar ve arayüze bildirir.</summary>
     public void RefreshStats()
     {
+        _statsRefreshPending = false;
+        RecomputeStats();
+
         OnPropertyChanged(nameof(PendingEntries));
         OnPropertyChanged(nameof(ManuallyEditedCount));
         OnPropertyChanged(nameof(QaIssueCount));
@@ -63,11 +78,86 @@ public sealed partial class MainViewModel
         RefreshTranslationState();
     }
 
-    partial void OnTotalEntriesChanged(int value) => RefreshStats();
-    partial void OnCompletedEntriesChanged(int value) => RefreshStats();
-    partial void OnErrorCountChanged(int value) => RefreshStats();
+    private void RecomputeStats()
+    {
+        int manual = 0, qa = 0, overflow = 0;
+        foreach (var e in LocalizationEntries)
+        {
+            if (e.Status == TranslationStatus.ManuallyEdited) manual++;
+            if (e.IsOverflowRisk) overflow++;
+            if (e.HasQaIssue) qa++;
+        }
+        _manuallyEditedCount = manual;
+        _qaIssueCount = qa;
+        _overflowRiskCount = overflow;
 
-    partial void OnFilterTextChanged(string value) => ApplyFilter();
+        // Kaynak metinler çeviri sırasında değişmez; kelime/karakter sayısı yalnızca liste değişince hesaplanır.
+        if (!ReferenceEquals(_sourceStatsFor, LocalizationEntries) || _sourceStatsCount != LocalizationEntries.Count)
+        {
+            int words = 0, chars = 0;
+            foreach (var e in LocalizationEntries)
+            {
+                chars += e.SourceText.Length;
+                words += CountWords(e.SourceText);
+            }
+            _totalSourceWords = words;
+            _totalSourceChars = chars;
+            _sourceStatsFor = LocalizationEntries;
+            _sourceStatsCount = LocalizationEntries.Count;
+        }
+    }
+
+    /// <summary>Boşlukla ayrılmış kelime sayısı (Split gibi dizi ayırmadan).</summary>
+    public static int CountWords(string text)
+    {
+        int count = 0;
+        bool inWord = false;
+        foreach (var c in text)
+        {
+            if (c == ' ') inWord = false;
+            else if (!inWord) { inWord = true; count++; }
+        }
+        return count;
+    }
+
+    // Çeviri sırasında her batch ilerlemesi CompletedEntries / ErrorCount'u değiştirir.
+    // İstatistikler en fazla ~3 kez/sn hesaplanır; son değer her zaman yansıtılır.
+    private bool _statsRefreshPending;
+    private static readonly TimeSpan StatsRefreshInterval = TimeSpan.FromMilliseconds(300);
+
+    private void ScheduleStatsRefresh()
+    {
+        if (_statsRefreshPending) return;
+        _statsRefreshPending = true;
+        _ = Task.Delay(StatsRefreshInterval).ContinueWith(_ =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_statsRefreshPending) RefreshStats();
+            }), TaskScheduler.Default);
+    }
+
+    partial void OnTotalEntriesChanged(int value) => RefreshStats();
+    partial void OnCompletedEntriesChanged(int value) => ScheduleStatsRefresh();
+    partial void OnErrorCountChanged(int value) => ScheduleStatsRefresh();
+
+    // Arama kutusu: her tuşta 22.000 satırı filtrelemek yerine yazma bitince (250 ms) bir kez filtrele.
+    private CancellationTokenSource? _filterDebounceCts;
+    private static readonly TimeSpan FilterDebounce = TimeSpan.FromMilliseconds(250);
+
+    partial void OnFilterTextChanged(string value)
+    {
+        _filterDebounceCts?.Cancel();
+        var cts = _filterDebounceCts = new CancellationTokenSource();
+        _ = Task.Delay(FilterDebounce, cts.Token).ContinueWith(t =>
+        {
+            if (!t.IsCanceled)
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (!cts.IsCancellationRequested) ApplyFilter();
+                });
+        }, TaskScheduler.Default);
+    }
+
     partial void OnShowOnlyErrorsChanged(bool value) => ApplyFilter();
     partial void OnSelectedStatusFilterChanged(string value) => ApplyFilter();
 
@@ -103,6 +193,22 @@ public sealed partial class MainViewModel
         }
 
         FilteredEntries = new ObservableCollection<LocalizationEntryViewModel>(filtered);
+
+        // Satırları değiştiren komutların hepsi ApplyFilter çağırır; önbellekli istatistikleri de tazele (kısıtlı).
+        ScheduleStatsRefresh();
+    }
+
+    /// <summary>Durum sayaçlarını (tamamlanan / hatalı) satırlardan yeniden sayar; elle durum değişikliklerinden sonra çağrılır.</summary>
+    private void RecountStatuses()
+    {
+        int completed = 0, errors = 0;
+        foreach (var e in LocalizationEntries)
+        {
+            if (e.Status is TranslationStatus.Done or TranslationStatus.ManuallyEdited) completed++;
+            else if (e.Status == TranslationStatus.Error) errors++;
+        }
+        CompletedEntries = completed;
+        ErrorCount = errors;
     }
 
     // ─── Toplu Bul ve Değiştir (Find & Replace) ─────────────────────────────
