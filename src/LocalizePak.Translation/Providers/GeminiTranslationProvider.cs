@@ -73,11 +73,20 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
 
         var (response, responseBody) = await PostGenerateAsync(_model, requestBody, ct);
 
-        // Önbellek süresi dolduysa / silindiyse: önbelleği bırak ve aynı batch'i önbelleksiz tekrar gönder
-        if (!response.IsSuccessStatusCode && cacheName != null && IsCacheError(responseBody))
+        // Önbellekli istek reddedildiyse aynı batch'i önbelleksiz (inline) tekrar gönder:
+        // - Süresi dolmuş / silinmiş önbellek → önbelleği bırak, sonraki batch yenisini oluşturur.
+        // - Diğer 4xx (429 hariç, örn. 400 INVALID_ARGUMENT) → bu oturumda önbelleği kapat ve nedenini raporla.
+        //   Böylece önbellek hiçbir durumda çeviriyi bozamaz.
+        int status = (int)response.StatusCode;
+        if (!response.IsSuccessStatusCode && cacheName != null &&
+            (IsCacheError(responseBody) || (status >= 400 && status < 500 && status != 429)))
         {
             response.Dispose();
-            await InvalidateCacheAsync(cacheName);
+            if (IsCacheError(responseBody))
+                await InvalidateCacheAsync(cacheName);
+            else
+                await DisableCacheAsync(cacheName, systemInstruction, $"Önbellekli istek reddedildi ({status}): {Excerpt(responseBody)}");
+
             requestBody = BuildRequestBody(systemInstruction, userPrompt, effort, cachedContentName: null);
             (response, responseBody) = await PostGenerateAsync(_model, requestBody, ct);
         }
@@ -232,7 +241,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
         if (!SupportsExplicitCache(_model) || EstimateTokens(systemInstruction) < MinExplicitCacheTokens)
             return null;
 
-        var key = $"{_model}\n{systemInstruction}";
+        var key = CacheKey(systemInstruction);
         if (key == _cacheRejectedKey)
             return null;
 
@@ -289,6 +298,28 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
         {
             // Ağ hatası: önbelleksiz devam et, sonraki batch tekrar dener.
             return null;
+        }
+        finally
+        {
+            _cacheLock.Release();
+        }
+    }
+
+    private string CacheKey(string systemInstruction) => $"{_model}\n{systemInstruction}";
+
+    /// <summary>Önbelleği bu oturum için kalıcı olarak kapatır ve nedenini istatistiğe yazar.</summary>
+    private async Task DisableCacheAsync(string cacheName, string systemInstruction, string reason)
+    {
+        await _cacheLock.WaitAsync();
+        try
+        {
+            _cacheRejectedKey = CacheKey(systemInstruction);
+            if (_cacheName == cacheName)
+            {
+                _cacheName = null;
+                _cacheKey = null;
+            }
+            CacheStats.RecordCacheDisabled(reason);
         }
         finally
         {

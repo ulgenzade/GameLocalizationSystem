@@ -305,6 +305,34 @@ public class PromptCachingTests
     }
 
     [Fact]
+    public async Task GeminiTranslate_CachedRequestInvalidArgument_RetriesInlineAndDisablesCache()
+    {
+        var handler = new StubHandler(r =>
+        {
+            if (r.Url.EndsWith("/cachedContents"))
+                return Json(HttpStatusCode.OK, """{"name":"cachedContents/bad"}""");
+
+            return r.Body.Contains("cachedContent")
+                ? Json(HttpStatusCode.BadRequest, """{"error":{"code":400,"message":"Request contains an invalid argument.","status":"INVALID_ARGUMENT"}}""")
+                : Json(HttpStatusCode.OK, GeminiOkResponse);
+        });
+        var provider = new GeminiTranslationProvider(new HttpClient(handler));
+        provider.Configure("test-key", "gemini-3.5-flash-lite");
+        var context = LargeLoreContext();
+
+        var first = await provider.TranslateBatchAsync(["Hello"], context);
+        await provider.TranslateBatchAsync(["World"], context);
+
+        Assert.Equal(["Merhaba"], first);
+        Assert.Single(handler.Requests, r => r.Url.EndsWith("/cachedContents"));
+        // 1. batch: önbellekli (400) + inline tekrar; 2. batch: doğrudan inline
+        var generates = handler.Requests.Where(r => r.Url.Contains(":generateContent")).ToList();
+        Assert.Equal(3, generates.Count);
+        Assert.Null(JsonNode.Parse(generates[2].Body)!["cachedContent"]);
+        Assert.Contains("invalid argument", provider.CacheStats.CacheDisabledReason);
+    }
+
+    [Fact]
     public async Task GeminiTranslate_CacheNearExpiry_CreatesNewCache()
     {
         int created = 0;
