@@ -608,6 +608,8 @@ public sealed partial class MainViewModel
             EstimatedTimeRemaining = "Tamamlandı";
             IsPaused = false;
             StatusMessage = $"İşlem tamamlandı! Süre: {ElapsedTime}, {CompletedEntries}/{entries.Count} satır başarıyla çevrildi, {ErrorCount} hata.";
+            if (provider is IPromptCacheReporter cacheReporter && cacheReporter.CacheStats.ToSummary() is { Length: > 0 } cacheSummary)
+                StatusMessage += $" {cacheSummary}";
         }
         catch (OperationCanceledException)
         {
