@@ -744,7 +744,7 @@
                                         </DataGridTemplateColumn>
 
                                         <!-- Durum Rozeti (WinUI 3 Pill) & QA İkonu -->
-                                        <DataGridTemplateColumn Header="{loc:Loc Grid_Col_Status}" Width="115" IsReadOnly="True">
+                                        <DataGridTemplateColumn Header="{loc:Loc Grid_Col_Status}" Width="135" IsReadOnly="True">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate x:DataType="vm:LocalizationEntryViewModel">
                                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
@@ -756,9 +756,19 @@
                                                                        Foreground="White"
                                                                        HorizontalAlignment="Center"/>
                                                         </Border>
-                                                        <TextBlock Text="⚠️" FontSize="11" VerticalAlignment="Center"
-                                                                   IsVisible="{Binding HasQaIssue}"
-                                                                   ToolTip.Tip="{Binding Notes}"/>
+                                                        <!-- Canlı LQA Rozeti: renk = en ağır MQM önem derecesi, sayı = sorun adedi -->
+                                                        <Border CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
+                                                                VerticalAlignment="Center"
+                                                                Background="{Binding QaBadgeColor}"
+                                                                IsVisible="{Binding HasQaIssue}"
+                                                                ToolTip.Tip="{Binding QaTooltip}"
+                                                                ToolTip.ShowDelay="200">
+                                                            <TextBlock Text="{Binding QaIssueCount, StringFormat='!{0}'}"
+                                                                       FontSize="10" FontWeight="Bold"
+                                                                       Foreground="White"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Border>
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
