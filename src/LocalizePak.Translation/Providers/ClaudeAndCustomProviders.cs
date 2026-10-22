@@ -8,9 +8,11 @@ using LocalizePak.Translation.Services;
 namespace LocalizePak.Translation.Providers;
 
 /// <summary>
-/// Anthropic Claude API entegrasyonu (Claude 3.5 Sonnet, Claude 3.7 Sonnet, Claude 3.5 Haiku).
+/// Anthropic Claude API entegrasyonu (Claude 5.5 ailesi ve eski Claude 3.x / 4.x modelleri).
+/// Sistem istemi (kurallar + direktif/lore + sözlük) prompt caching ile önbelleğe alınır;
+/// aynı çeviri oturumundaki sonraki batch'ler bu kısmı ~%90 indirimli okur.
 /// </summary>
-public sealed class ClaudeTranslationProvider : ITranslationProvider
+public sealed class ClaudeTranslationProvider : ITranslationProvider, IPromptCacheReporter
 {
     private readonly HttpClient _http;
     private string _apiKey = string.Empty;
@@ -18,6 +20,7 @@ public sealed class ClaudeTranslationProvider : ITranslationProvider
 
     public string Name => "Claude (Anthropic)";
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey);
+    public PromptCacheStats CacheStats { get; } = new();
 
     public ClaudeTranslationProvider(HttpClient httpClient)
     {
@@ -42,43 +45,7 @@ public sealed class ClaudeTranslationProvider : ITranslationProvider
             "MUTLAK ÇIKTI KURALI: Yanıtını SADECE ve SADECE JSON dizisi olarak döndür: [\"çeviri 1\", \"çeviri 2\", ...]. Hiçbir markdown veya açıklama ekleme.");
         var userPrompt = TranslationPromptHelper.BuildUserJsonArrayPrompt(maskedTexts, context);
 
-        var effort = context.NormalizedReasoningEffort;
-        var requestBody = new JsonObject
-        {
-            ["model"] = _model,
-            ["system"] = systemPrompt,
-            ["messages"] = new JsonArray
-            {
-                new JsonObject
-                {
-                    ["role"] = "user",
-                    ["content"] = userPrompt
-                }
-            }
-        };
-
-        if (effort is "low" or "medium" or "high")
-        {
-            int budgetTokens = effort switch
-            {
-                "low" => 1024,
-                "medium" => 2048,
-                "high" => 4096,
-                _ => 1024
-            };
-            requestBody["max_tokens"] = 8192 + budgetTokens;
-            requestBody["temperature"] = 1.0; // Anthropic spec: thinking requires temperature 1.0
-            requestBody["thinking"] = new JsonObject
-            {
-                ["type"] = "enabled",
-                ["budget_tokens"] = budgetTokens
-            };
-        }
-        else
-        {
-            requestBody["max_tokens"] = 4096;
-            requestBody["temperature"] = 0.2;
-        }
+        var requestBody = BuildRequestBody(_model, systemPrompt, userPrompt, context.NormalizedReasoningEffort);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
         request.Headers.Add("x-api-key", _apiKey);
@@ -91,8 +58,118 @@ public sealed class ClaudeTranslationProvider : ITranslationProvider
         if (!response.IsSuccessStatusCode)
             throw new HttpRequestException($"Anthropic Claude API hatası ({response.StatusCode}): {responseBody}", null, response.StatusCode);
 
+        RecordCacheUsage(responseBody, CacheStats);
         return ParseResponse(responseBody, maskedTexts.Count);
     }
+
+    /// <summary>
+    /// Messages API istek gövdesini oluşturur.
+    /// Sistem istemi tek bir text bloğu olarak gönderilir ve üzerine <c>cache_control</c> konur:
+    /// istemin sabit kısmı (kurallar, direktif/lore, sözlük) önbelleğe yazılır, değişen kısım
+    /// (her batch'in metinleri) kullanıcı mesajında, işaretçinin arkasında kalır.
+    /// </summary>
+    public static JsonObject BuildRequestBody(string model, string systemPrompt, string userPrompt, string effort)
+    {
+        var requestBody = new JsonObject
+        {
+            ["model"] = model,
+            ["system"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["type"] = "text",
+                    ["text"] = systemPrompt,
+                    ["cache_control"] = new JsonObject { ["type"] = "ephemeral" }
+                }
+            },
+            ["messages"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = userPrompt
+                }
+            }
+        };
+
+        bool thinkingRequested = effort is "low" or "medium" or "high";
+
+        if (IsLegacyModel(model))
+        {
+            // Claude 3.x / 4.0–4.5: sabit düşünme bütçesi ve temperature hâlâ geçerli.
+            if (thinkingRequested)
+            {
+                int budgetTokens = effort switch
+                {
+                    "low" => 1024,
+                    "medium" => 2048,
+                    "high" => 4096,
+                    _ => 1024
+                };
+                requestBody["max_tokens"] = 8192 + budgetTokens;
+                requestBody["temperature"] = 1.0; // Anthropic spec: thinking requires temperature 1.0
+                requestBody["thinking"] = new JsonObject
+                {
+                    ["type"] = "enabled",
+                    ["budget_tokens"] = budgetTokens
+                };
+            }
+            else
+            {
+                requestBody["max_tokens"] = 4096;
+                requestBody["temperature"] = 0.2;
+            }
+        }
+        else
+        {
+            // Claude 4.6+ / 5.x: budget_tokens ve özel temperature değerleri 400 döndürür.
+            // Düşünme derinliği yalnızca adaptive thinking + output_config.effort ile ayarlanır.
+            requestBody["max_tokens"] = 16000;
+            if (thinkingRequested)
+                requestBody["thinking"] = new JsonObject { ["type"] = "adaptive" };
+            requestBody["output_config"] = new JsonObject
+            {
+                ["effort"] = thinkingRequested ? effort : "low"
+            };
+        }
+
+        return requestBody;
+    }
+
+    /// <summary>
+    /// Claude 3.x, 2.x ve 4.0–4.5 modelleri eski istek şemasını (budget_tokens + temperature) kullanır.
+    /// </summary>
+    public static bool IsLegacyModel(string model)
+    {
+        var m = model.Trim().ToLowerInvariant();
+        if (m.StartsWith("claude-3") || m.StartsWith("claude-2") || m.StartsWith("claude-instant"))
+            return true;
+
+        return System.Text.RegularExpressions.Regex.IsMatch(m, @"^claude-(opus|sonnet|haiku)-4(-[0-5])?(-\d{8})?$");
+    }
+
+    /// <summary>Yanıttaki usage alanından önbellek okuma/yazma token'larını istatistiğe işler.</summary>
+    public static void RecordCacheUsage(string responseBody, PromptCacheStats stats)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (!doc.RootElement.TryGetProperty("usage", out var usage))
+                return;
+
+            stats.Record(
+                ReadLong(usage, "input_tokens"),
+                ReadLong(usage, "cache_read_input_tokens"),
+                ReadLong(usage, "cache_creation_input_tokens"));
+        }
+        catch (JsonException)
+        {
+            // İstatistik yalnızca bilgi amaçlı; bozuk usage çeviriyi durdurmamalı.
+        }
+    }
+
+    private static long ReadLong(JsonElement obj, string name) =>
+        obj.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64() : 0;
 
     private static string BuildSystemPrompt(TranslationContext ctx)
     {
@@ -132,22 +209,41 @@ public sealed class ClaudeTranslationProvider : ITranslationProvider
         return $"Aşağıdaki metinleri aynı sırada çevir ve sadece JSON dizisi olarak döndür:\n{arr.ToJsonString()}";
     }
 
-    private static IReadOnlyList<string> ParseResponse(string responseBody, int expectedCount)
+    /// <summary>
+    /// Yanıttaki text bloklarını birleştirip JSON çeviri dizisini ayrıştırır.
+    /// Düşünme açıkken content[0] bir "thinking" bloğu olabilir; bu yüzden ilk blok değil, text blokları okunur.
+    /// </summary>
+    public static IReadOnlyList<string> ParseResponse(string responseBody, int expectedCount)
     {
+        string text;
         try
         {
             using var doc = JsonDocument.Parse(responseBody);
-            var content = doc.RootElement
-                .GetProperty("content")[0]
-                .GetProperty("text")
-                .GetString() ?? "[]";
+            var root = doc.RootElement;
 
-            return JsonTranslationParser.Parse(content, expectedCount);
+            if (root.TryGetProperty("stop_reason", out var stopReason) && stopReason.GetString() == "refusal")
+                throw new HttpRequestException("Claude güvenlik sınıflandırıcısı bu metin grubunun çevrilmesini reddetti (stop_reason: refusal).");
+
+            var sb = new StringBuilder();
+            if (root.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in content.EnumerateArray())
+                {
+                    if (block.TryGetProperty("type", out var type) && type.GetString() == "text" &&
+                        block.TryGetProperty("text", out var t))
+                    {
+                        sb.Append(t.GetString());
+                    }
+                }
+            }
+            text = sb.Length > 0 ? sb.ToString() : responseBody;
         }
-        catch
+        catch (JsonException)
         {
-            return JsonTranslationParser.Parse(responseBody, expectedCount);
+            text = responseBody;
         }
+
+        return JsonTranslationParser.Parse(text, expectedCount);
     }
 }
 
