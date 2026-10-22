@@ -112,7 +112,7 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests || responseBody.Contains("RESOURCE_EXHAUSTED"))
             {
                 throw new HttpRequestException(
-                    "⚠️ Gemini API Kotası Doldu (429 - Günlük İstek Sınırı / Rate Limit). Lütfen Ayarlar'dan modeli değiştirin (örn. gemini-3.5-flash-lite) veya başka bir API anahtarı ekleyin.",
+                    $"⚠️ Gemini API Kotası Doldu (429 - Günlük İstek Sınırı / Rate Limit). Lütfen Ayarlar'dan modeli değiştirin (örn. gemini-3.5-flash-lite) veya başka bir API anahtarı ekleyin. Ayrıntı: {Excerpt(responseBody.Replace(_apiKey, "***"))}",
                     null,
                     System.Net.HttpStatusCode.TooManyRequests);
             }
@@ -268,12 +268,15 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
                 _cacheName = null;
                 _cacheKey = null;
 
-                // Kalıcı ret (örn. 400 "Cached content is too small", model desteklemiyor): bu oturumda tekrar deneme.
-                // Geçici hatalarda (429 / 5xx) sonraki batch yeniden dener.
+                // Kalıcı ret: 400 "Cached content is too small", model desteklemiyor veya 429
+                // (ücretsiz katmanda explicit önbellek kotası 0'dır; tekrar denemek yalnızca istek kotasını tüketir).
+                // Yalnızca 5xx sunucu hatalarında sonraki batch yeniden dener.
                 int status = (int)response.StatusCode;
-                bool transient = status == 429 || status >= 500;
-                if (!transient)
+                if (status < 500)
+                {
                     _cacheRejectedKey = key;
+                    CacheStats.RecordCacheDisabled($"Gemini önbellek oluşturmayı reddetti ({status}): {Excerpt(responseBody)}");
+                }
                 return null;
             }
 
@@ -308,6 +311,24 @@ public sealed class GeminiTranslationProvider : ITranslationProvider, IPromptCac
         {
             _cacheLock.Release();
         }
+    }
+
+    /// <summary>API hata gövdesinden kısa, okunabilir bir alıntı (error.message varsa o).</summary>
+    private static string Excerpt(string responseBody)
+    {
+        string text = responseBody;
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("error", out var err) && err.TryGetProperty("message", out var msg))
+                text = msg.GetString() ?? responseBody;
+        }
+        catch (JsonException)
+        {
+        }
+
+        text = text.ReplaceLineEndings(" ").Trim();
+        return text.Length > 240 ? text[..240] + "…" : text;
     }
 
     private static string? TryReadCacheName(string responseBody)
