@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO.Formats;
 using LocalizePak.IO.Services;
 
 namespace LocalizePak.UI.ViewModels;
@@ -151,6 +152,7 @@ public sealed partial class MainViewModel
             "PAK Arşivi Seç (.pak)",
             [
                 ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
             ]);
         if (path is null) return;
@@ -160,6 +162,17 @@ public sealed partial class MainViewModel
     /// <summary>
     /// Verilen dosya yolundan .pak arşivini açar (Sürükle-Bırak veya Dosya Seçici).
     /// </summary>
+    /// <summary>
+    /// Dosya arşiv olarak mı (.pak, Unity .assets / .bundle / .unity3d, uzantısız level* / globalgamemanagers)
+    /// yoksa doğrudan metin/lokalizasyon dosyası olarak mı açılmalı?
+    /// </summary>
+    public static bool IsArchivePath(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext is ".pak" or ".assets" or ".bundle" or ".unity3d" or ".ab") return true;
+        return ext.Length == 0 && UnityPakHandler.IsUnityFile(path);
+    }
+
     public async Task OpenPakFromPathAsync(string path)
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
@@ -377,9 +390,10 @@ public sealed partial class MainViewModel
         var path = await ShowOpenFileDialogAsync(
             "Lokalizasyon veya Arşiv Dosyası Seç (.locres, .pak, .json, .csv, .xml)",
             [
-                ["Tüm Desteklenen Dosyalar", "*.locres", "*.pak", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
+                ["Tüm Desteklenen Dosyalar", "*.locres", "*.pak", "*.assets", "*.bundle", "*.unity3d", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
                 ["Lokalizasyon Dosyaları (*.locres, *.json, ...)", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
                 ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
             ]);
 
@@ -392,7 +406,7 @@ public sealed partial class MainViewModel
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
 
         // Kullanıcı bu diyalogdan .pak seçtiyse otomatik olarak .pak yükleyicisine yönlendir
-        if (Path.GetExtension(path).Equals(".pak", StringComparison.OrdinalIgnoreCase))
+        if (IsArchivePath(path))
         {
             await OpenPakFromPathAsync(path);
             return;
@@ -480,8 +494,9 @@ public sealed partial class MainViewModel
         var path = await ShowOpenFileDialogAsync(
             "Dosya veya Arşiv Ekle (.pak, .locres, .json, .csv, .xml, .po)",
             [
-                ["Tüm Desteklenen Dosyalar (*.pak, *.locres, ...)", "*.pak", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
+                ["Tüm Desteklenen Dosyalar (*.pak, *.locres, ...)", "*.pak", "*.assets", "*.bundle", "*.unity3d", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
                 ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Lokalizasyon Dosyaları (*.locres, *.json, ...)", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
             ]);
@@ -495,7 +510,7 @@ public sealed partial class MainViewModel
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
 
         // Kullanıcı bu diyalogdan .pak seçtiyse otomatik olarak .pak yükleyicisine yönlendir
-        if (Path.GetExtension(path).Equals(".pak", StringComparison.OrdinalIgnoreCase))
+        if (IsArchivePath(path))
         {
             await OpenPakFromPathAsync(path);
             return;
