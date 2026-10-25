@@ -1,6 +1,7 @@
 using System.Text;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO.Helpers;
 
 namespace LocalizePak.IO.Formats;
 
@@ -106,6 +107,7 @@ public static class GodotPakHandler
     public static async Task<Stream> ExtractEntryAsync(string filePath, PakEntry entry, CancellationToken ct = default)
     {
         await using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
+        SafeIo.ValidateEntryRange(entry, fs.Length, checkUncompressedOnly: true);
         fs.Seek(entry.DataOffset, SeekOrigin.Begin);
 
         var data = new byte[entry.UncompressedSize];
