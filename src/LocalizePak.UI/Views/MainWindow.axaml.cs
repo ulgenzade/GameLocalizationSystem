@@ -60,7 +60,7 @@ public partial class MainWindow : Window
             if (!string.IsNullOrEmpty(localPath) && System.IO.File.Exists(localPath))
             {
                 var ext = System.IO.Path.GetExtension(localPath).ToLowerInvariant();
-                if (ext is ".pak")
+                if (MainViewModel.IsArchivePath(localPath))
                 {
                     await ViewModel.OpenPakFromPathAsync(localPath);
                 }
@@ -169,47 +169,60 @@ public partial class MainWindow : Window
 
     private async void OnAesKeyVaultClick(object? sender, RoutedEventArgs e)
     {
-        var vm = new AesKeyVaultViewModel();
-        vm.OnKeySelected = (key) =>
+        try
         {
-            ViewModel.AesKey = key;
-            ViewModel.StatusMessage = $"🔑 Anahtar Havuzundan seçilen AES Anahtarı uygulandı: {key[..Math.Min(16, key.Length)]}...";
-            if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
+            // Anahtar hem OnKeySelected geri çağrısıyla hem de diyalog sonucu olarak dönebilir;
+            // aynı anahtar için paketi iki kez (eşzamanlı) açmamak adına uygulananı hatırla.
+            string? appliedKey = null;
+            void ApplyKey(string key)
             {
-                _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
+                if (key == appliedKey) return;
+                appliedKey = key;
+                ViewModel.AesKey = key;
+                ViewModel.StatusMessage = $"🔑 Anahtar Havuzundan uygulandı: {key[..Math.Min(16, key.Length)]}...";
+                if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
+                {
+                    _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
+                }
             }
-        };
-        var win = new AesKeyVaultWindow { DataContext = vm };
-        var result = await win.ShowDialog<string?>(this);
-        if (!string.IsNullOrWhiteSpace(result))
+
+            var vm = new AesKeyVaultViewModel { OnKeySelected = ApplyKey };
+            var win = new AesKeyVaultWindow { DataContext = vm };
+            var result = await win.ShowDialog<string?>(this);
+            if (!string.IsNullOrWhiteSpace(result))
+                ApplyKey(result);
+        }
+        catch (Exception ex)
         {
-            ViewModel.AesKey = result;
-            ViewModel.StatusMessage = $"🔑 Anahtar Havuzundan uygulandı: {result[..Math.Min(16, result.Length)]}...";
-            if (!string.IsNullOrEmpty(ViewModel.LastOpenedPath))
-            {
-                _ = ViewModel.OpenPakFromPathAsync(ViewModel.LastOpenedPath);
-            }
+            ViewModel.StatusMessage = $"⚠️ Anahtar Havuzu açılamadı: {ex.Message}";
         }
     }
 
     private async void OnRamAesExtractorClick(object? sender, RoutedEventArgs e)
     {
-        var vm = new RamAesExtractorViewModel(ViewModel.LastOpenedPath);
-        vm.OnKeyApplied = (key) =>
+        try
         {
-            ViewModel.AesKey = key;
-            ViewModel.StatusMessage = $"🔑 RAM'den alınan AES Anahtarı uygulandı: {key[..Math.Min(16, key.Length)]}...";
-            var targetPath = !string.IsNullOrEmpty(ViewModel.LastOpenedPath)
-                ? ViewModel.LastOpenedPath
-                : vm.PakFilePath;
-
-            if (!string.IsNullOrEmpty(targetPath))
+            var vm = new RamAesExtractorViewModel(ViewModel.LastOpenedPath);
+            vm.OnKeyApplied = (key) =>
             {
-                _ = ViewModel.OpenPakFromPathAsync(targetPath);
-            }
-        };
-        var win = new RamAesExtractorWindow { DataContext = vm };
-        await win.ShowDialog(this);
+                ViewModel.AesKey = key;
+                ViewModel.StatusMessage = $"🔑 RAM'den alınan AES Anahtarı uygulandı: {key[..Math.Min(16, key.Length)]}...";
+                var targetPath = !string.IsNullOrEmpty(ViewModel.LastOpenedPath)
+                    ? ViewModel.LastOpenedPath
+                    : vm.PakFilePath;
+
+                if (!string.IsNullOrEmpty(targetPath))
+                {
+                    _ = ViewModel.OpenPakFromPathAsync(targetPath);
+                }
+            };
+            var win = new RamAesExtractorWindow { DataContext = vm };
+            await win.ShowDialog(this);
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusMessage = $"⚠️ RAM AES aracı açılamadı: {ex.Message}";
+        }
     }
 
     private void OnHelpClick(object? sender, RoutedEventArgs e)

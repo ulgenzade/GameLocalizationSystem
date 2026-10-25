@@ -1,5 +1,6 @@
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.Translation.Services;
 using LocalizePak.UI.ViewModels;
 using Xunit;
 
@@ -89,5 +90,50 @@ public class MvvmModuleTests
         Assert.True(vm.LengthDifferencePercent > 40);
         Assert.True(vm.IsOverflowRisk);
         Assert.Equal("#EF4444", vm.OverflowColor);
+    }
+
+    [Fact]
+    public void LocalizationEntryViewModel_LqaBadge_UpdatesLiveWhenTranslationEdited()
+    {
+        var model = new LocalizationEntry
+        {
+            Key = "UI_Gold",
+            SourceText = "Found {0} gold",
+            TranslatedText = "Altın buldun",
+            Status = TranslationStatus.Done
+        };
+        var vm = new LocalizationEntryViewModel(model);
+        var changed = new List<string?>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        Assert.True(vm.HasQaIssue);
+        Assert.Equal(QaSeverity.Critical, vm.HighestQaSeverity);
+        Assert.Equal("#EF4444", vm.QaBadgeColor);
+        Assert.StartsWith("LQA: 1 sorun (en yüksek: Kritik)", vm.QaTooltip);
+
+        vm.TranslatedText = "{0} altın buldun";
+
+        Assert.False(vm.HasQaIssue);
+        Assert.Null(vm.HighestQaSeverity);
+        Assert.Equal(string.Empty, vm.QaTooltip);
+        Assert.Contains(nameof(LocalizationEntryViewModel.HasQaIssue), changed);
+        Assert.Contains(nameof(LocalizationEntryViewModel.QaBadgeColor), changed);
+    }
+
+    [Fact]
+    public void LocalizationEntryViewModel_LqaBadge_UntranslatedContentIsHighSeverity()
+    {
+        var model = new LocalizationEntry
+        {
+            Key = "DLG_1",
+            SourceText = "Welcome to the kingdom",
+            TranslatedText = "Welcome to the kingdom"
+        };
+
+        var vm = new LocalizationEntryViewModel(model);
+
+        Assert.Equal(QaSeverity.High, vm.HighestQaSeverity);
+        Assert.Equal("#F97316", vm.QaBadgeColor);
+        Assert.Equal(1, vm.QaIssueCount);
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using LocalizePak.IO.Helpers;
 
 namespace LocalizePak.IO.Services;
 
@@ -18,6 +19,17 @@ public static class PatchInstallerGenerator
         "Yalnızca orijinal oyuna sahip kullanıcıların kendi kopyalarına uygulanabilir ve ticari amaçla satılamaz.";
 
     /// <summary>
+    /// Oyun adı, yama dosya adı ve hedef alt klasör kullanıcıdan / arşiv adından gelir.
+    /// .bat içinde komut ayırıcı veya değişken karakteri (&amp;, |, %, ^ ...) kalmaması için temizlenir;
+    /// yama adı ayrıca yalnızca dosya adına indirgenir.
+    /// </summary>
+    private static (string GameName, string PatchFileName, string TargetSubfolder) SanitizeBatchInputs(
+        string gameName, string patchFileName, string targetSubfolder) =>
+        (SafeIo.SanitizeForBatch(gameName),
+         SafeIo.SanitizeForBatch(Path.GetFileName(patchFileName)),
+         SafeIo.SanitizeForBatch(targetSubfolder));
+
+    /// <summary>
     /// Bir yama klasörü için otomatik yedekleme ve tek tıkla kurulum batch betiği üretir.
     /// </summary>
     public static string GenerateInstallerBatch(
@@ -25,6 +37,7 @@ public static class PatchInstallerGenerator
         string patchFileName,
         string targetSubfolder = @"Content\Paks\~mods")
     {
+        (gameName, patchFileName, targetSubfolder) = SanitizeBatchInputs(gameName, patchFileName, targetSubfolder);
         var sb = new StringBuilder();
         sb.AppendLine("@echo off");
         sb.AppendLine("chcp 65001 >nul");
@@ -78,6 +91,7 @@ public static class PatchInstallerGenerator
         string patchFileName,
         string targetSubfolder = @"Content\Paks\~mods")
     {
+        (gameName, patchFileName, targetSubfolder) = SanitizeBatchInputs(gameName, patchFileName, targetSubfolder);
         var sb = new StringBuilder();
         sb.AppendLine("@echo off");
         sb.AppendLine("chcp 65001 >nul");
@@ -121,8 +135,8 @@ public static class PatchInstallerGenerator
             Directory.CreateDirectory(outputDirectory);
         }
 
-        // 1. Yama dosyası
-        File.WriteAllBytes(Path.Combine(outputDirectory, patchFileName), patchData);
+        // 1. Yama dosyası (yalnızca dosya adı kullanılır; "..\" ile klasör dışına yazılamaz)
+        File.WriteAllBytes(Path.Combine(outputDirectory, Path.GetFileName(patchFileName)), patchData);
 
         // 2. Kurulum betiği
         string installBat = GenerateInstallerBatch(gameName, patchFileName, targetSubfolder);

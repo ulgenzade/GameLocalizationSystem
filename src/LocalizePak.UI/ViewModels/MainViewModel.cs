@@ -42,6 +42,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        // Çok dilli CSV/TSV tablolarında kaynak ve hedef sütunları seçili dillere göre belirlenir
+        _locresService.LanguagePreference = () => (MapLanguageToIsoCode(SelectedSourceLanguage), MapLanguageToIsoCode(SelectedTargetLanguage));
         _ = LoadSettingsAsync();
         _ = CheckRecoverySessionAsync();
     }
@@ -200,8 +202,9 @@ public sealed partial class MainViewModel : ObservableObject
                 EnableTranslationMemory = EnableTranslationMemory,
                 GlossaryEntries = GlossaryList.ToList()
             };
-            await SettingsService.SaveAsync(settings);
-            StatusMessage = "Ayarlar başarıyla kaydedildi.";
+            StatusMessage = await SettingsService.SaveAsync(settings)
+                ? "Ayarlar başarıyla kaydedildi."
+                : "⚠️ Ayarlar kaydedilemedi (dosya kilitli veya yazma izni yok). Değişiklikler yalnızca bu oturumda geçerli.";
         }
         catch (Exception ex)
         {

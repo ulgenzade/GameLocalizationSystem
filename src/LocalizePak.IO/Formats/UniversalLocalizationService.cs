@@ -17,6 +17,12 @@ public sealed class UniversalLocalizationService : ILocresSerializer
 {
     private readonly LocresService _locresService = new();
 
+    /// <summary>
+    /// Çok dilli tablolarda (CSV/TSV) sütun seçimi için kaynak ve hedef dil ISO kodları (ör. ("en", "tr")).
+    /// Arayüz, seçili dilleri buradan verir; atanmazsa İngilizce → Türkçe varsayılır.
+    /// </summary>
+    public Func<(string Source, string Target)>? LanguagePreference { get; set; }
+
     /// <inheritdoc/>
     public async Task<LocresFile> DeserializeAsync(Stream stream, CancellationToken ct = default)
     {
@@ -71,7 +77,16 @@ public sealed class UniversalLocalizationService : ILocresSerializer
             return PoCodec.Parse(content);
         }
 
-        // 5. CSV / TSV / INI formatı (Yalnızca XML olmayan ve açık ayırıcı içeren metinler)
+        // 5. Tutarlı sütunlu tablo (CSV / TSV): çok dilli tablolar dahil, biçimi korunarak okunur.
+        // (Etiket içeren metinlerde de çalışır; eski ayrıştırıcı '<' gördüğünde düz satırlara düşüyordu.)
+        bool hasBom = buffer.Length >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF;
+        var (sourceLang, targetLang) = LanguagePreference?.Invoke() ?? ("en", "tr");
+        if (DelimitedTableCodec.TryParse(content, hasBom, sourceLang, targetLang, out var table))
+        {
+            return table;
+        }
+
+        // 6. CSV / TSV / INI formatı (Yalnızca XML olmayan ve açık ayırıcı içeren metinler)
         if (!content.Contains('<') && !content.Contains('>') &&
             (content.Contains(',') || content.Contains('\t') || content.Contains('=')))
         {
@@ -85,6 +100,12 @@ public sealed class UniversalLocalizationService : ILocresSerializer
     /// <inheritdoc/>
     public async Task<byte[]> SerializeAsync(LocresFile locresFile, CancellationToken ct = default)
     {
+        // Tablodan okunduysa özgün biçimiyle (yalnızca hedef sütun değişerek) yaz
+        if (locresFile.Table != null)
+        {
+            return DelimitedTableCodec.Serialize(locresFile.Table);
+        }
+
         // Format türüne göre serileştir
         var path = locresFile.SourcePath?.ToLowerInvariant() ?? string.Empty;
 

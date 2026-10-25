@@ -37,4 +37,9 @@ public sealed class LocresFile
 
     /// <summary>Toplam girdi sayısı.</summary>
     public int TotalEntryCount => Namespaces.Sum(ns => ns.Entries.Count);
+
+    /// <summary>
+    /// Dosya çok sütunlu bir CSV/TSV tablosundan okunduysa özgün tablo (biçimi koruyarak geri yazmak için); aksi halde null.
+    /// </summary>
+    public DelimitedTable? Table { get; set; }
 }

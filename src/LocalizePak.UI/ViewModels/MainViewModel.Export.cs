@@ -66,7 +66,8 @@ public sealed partial class MainViewModel
             // Birebir aynı dosya adıyla (örn. English.pak) tarihli klasöre yaz
             await _pakService.WriteAsync(targetFilePath, mountPoint, filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey));
+                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                sourceArchivePath: _currentArchive.FilePath);
 
             // Bilgi notu dosyası oluştur
             var infoPath = Path.Combine(targetDir, "cevirme_bilgisi.txt");
@@ -383,7 +384,8 @@ public sealed partial class MainViewModel
 
             await _pakService.WriteAsync(outputPath, mountPoint, filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey));
+                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                sourceArchivePath: _currentArchive.FilePath);
 
             LastExportedDirectory = Path.GetDirectoryName(outputPath);
             HasExportedDirectory = !string.IsNullOrEmpty(LastExportedDirectory);
@@ -473,7 +475,8 @@ public sealed partial class MainViewModel
             await _pakService.WriteAsync(outputPath, mountPoint,
                 filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey));
+                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                sourceArchivePath: _currentArchive.FilePath);
 
             // IoStore oyunları: motorun .pak ile birlikte aradığı _P.utoc/_P.ucas eşi
             if (_currentArchive.IsIoStore)
