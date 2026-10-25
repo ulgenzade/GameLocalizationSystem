@@ -60,7 +60,7 @@ public partial class MainWindow : Window
             if (!string.IsNullOrEmpty(localPath) && System.IO.File.Exists(localPath))
             {
                 var ext = System.IO.Path.GetExtension(localPath).ToLowerInvariant();
-                if (ext is ".pak")
+                if (MainViewModel.IsArchivePath(localPath))
                 {
                     await ViewModel.OpenPakFromPathAsync(localPath);
                 }
