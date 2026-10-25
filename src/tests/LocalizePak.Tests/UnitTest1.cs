@@ -647,33 +647,6 @@ public class LocalizationTests
         }
     }
 
-    [Fact]
-    public async Task UnityPakHandler_WriteAndRead_Roundtrip()
-    {
-        var tempFile = Path.Combine(Path.GetTempPath(), $"unity_test_{Guid.NewGuid():N}.pak");
-
-        try
-        {
-            var files = new List<(string VirtualPath, byte[] Data)>
-            {
-                ("Assets/Resources/dialogue.json", System.Text.Encoding.UTF8.GetBytes("{\"title\": \"Quest\"}"))
-            };
-
-            await UnityPakHandler.WriteArchiveAsync(tempFile, files);
-            Assert.True(File.Exists(tempFile));
-
-            var archive = await UnityPakHandler.ReadArchiveAsync(tempFile);
-            Assert.Single(archive.Entries);
-
-            using var stream = await UnityPakHandler.ExtractEntryAsync(tempFile, archive.Entries[0]);
-            Assert.True(stream.Length > 0);
-        }
-        finally
-        {
-            if (File.Exists(tempFile)) File.Delete(tempFile);
-        }
-    }
-
     [Theory]
     [InlineData("Otomatik Algıla", "auto")]
     [InlineData("auto", "auto")]

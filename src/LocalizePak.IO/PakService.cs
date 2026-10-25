@@ -77,21 +77,17 @@ public sealed class PakService : IPakReader, IPakWriter
             }
         }
 
-        // 4. Unity Engine .pak / AssetBundle (Magic: "UnityFS" / "UnityWeb")
+        // 4. Unity: UnityFS AssetBundle (.bundle / .unity3d) veya SerializedFile (.assets / level*)
         if (UnityPakHandler.IsUnityPak(fs))
         {
             try
             {
-                var unityPak = await UnityPakHandler.ReadArchiveAsync(filePath, ct);
-                if (unityPak.Entries.Count > 0)
-                {
-                    unityPak.Format = PakFormat.Unity;
-                    return unityPak;
-                }
+                return await UnityPakHandler.ReadArchiveAsync(filePath, ct);
             }
-            catch
+            catch (Exception ex) when (ex is NotSupportedException or InvalidDataException or EndOfStreamException)
             {
-                // Geri dönüşe devam et
+                // Sezgisel taramaya düşmek yerine (GB'lık paketlerde çok yavaş) gerçek nedeni bildir
+                throw new InvalidDataException($"Unity dosyası açılamadı: {ex.Message}", ex);
             }
         }
 
@@ -251,7 +247,8 @@ public sealed class PakService : IPakReader, IPakWriter
         IReadOnlyList<(string VirtualPath, byte[] Data)> files,
         CancellationToken ct = default,
         PakFormat sourceFormat = PakFormat.Unknown,
-        string? aesKey = null)
+        string? aesKey = null,
+        string? sourceArchivePath = null)
     {
         // 1. Larian LSPak formatı (DOS2 / Baldur's Gate 3)
         if (sourceFormat == PakFormat.Larian)
@@ -284,7 +281,10 @@ public sealed class PakService : IPakReader, IPakWriter
         // 5. Unity Engine AssetBundle .pak
         if (sourceFormat == PakFormat.Unity)
         {
-            await UnityPakHandler.WriteArchiveAsync(outputPath, files, ct);
+            // Unity dosyaları sıfırdan üretilemez: özgün dosya yamalanır (yalnızca değişen nesneler)
+            if (string.IsNullOrEmpty(sourceArchivePath) || !File.Exists(sourceArchivePath))
+                throw new InvalidOperationException("Unity dosyası yazmak için özgün dosyanın yolu gerekli.");
+            await UnityPakHandler.WriteArchiveAsync(sourceArchivePath, outputPath, files, ct);
             return;
         }
 
@@ -446,16 +446,20 @@ public sealed class PakService : IPakReader, IPakWriter
             using var ms = new MemoryStream(data, skip, data.Length - skip - trim);
             using var deflate = new DeflateStream(ms, CompressionMode.Decompress);
             var output = new MemoryStream((int)Math.Max(64, uncompressedSize));
-            deflate.CopyTo(output);
+            SafeIo.CopyBounded(deflate, output, SafeIo.DecompressionLimit(uncompressedSize));
             output.Position = 0;
             return output;
+        }
+        catch (DecompressionLimitExceededException)
+        {
+            throw; // Sıkıştırma bombası: ikinci yöntemle yeniden açmayı deneme
         }
         catch
         {
             using var ms = new MemoryStream(data);
             using var deflate = new DeflateStream(ms, CompressionMode.Decompress);
             var output = new MemoryStream((int)Math.Max(64, uncompressedSize));
-            deflate.CopyTo(output);
+            SafeIo.CopyBounded(deflate, output, SafeIo.DecompressionLimit(uncompressedSize));
             output.Position = 0;
             return output;
         }

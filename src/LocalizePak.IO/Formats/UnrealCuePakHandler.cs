@@ -59,14 +59,24 @@ public static class UnrealCuePakHandler
                 {
                     var startDir = File.Exists(pakOrGamePath) ? Path.GetDirectoryName(pakOrGamePath) : pakOrGamePath;
                     var cur = !string.IsNullOrEmpty(startDir) && Directory.Exists(startDir) ? new DirectoryInfo(startDir) : null;
-                    for (int i = 0; i < 4 && cur != null; i++)
+                    // Yalnızca pak klasörü ve 4 üst klasör + UE'nin bilinen Oodle konumları taranır.
+                    // (Eskiden her üst klasörde AllDirectories ile arama yapılıyordu: Steam kütüphanesi / tüm
+                    // sürücü taranabiliyor, uygulama donuyor ve ilgisiz bir klasördeki DLL yüklenebiliyordu.)
+                    string[] knownSubDirs = ["", Path.Combine("Binaries", "Win64"), Path.Combine("Engine", "Binaries", "ThirdParty", "Oodle", "Win64")];
+                    for (int i = 0; i < 5 && cur != null; i++)
                     {
-                        try
+                        foreach (var sub in knownSubDirs)
                         {
-                            var dlls = cur.GetFiles("oo2core*.dll", SearchOption.AllDirectories);
-                            foreach (var d in dlls) candidates.Add(d.FullName);
+                            try
+                            {
+                                var dir = Path.Combine(cur.FullName, sub);
+                                if (!Directory.Exists(dir)) continue;
+                                foreach (var d in Directory.EnumerateFiles(dir, "oo2core*.dll", SearchOption.TopDirectoryOnly))
+                                    candidates.Add(d);
+                            }
+                            catch (UnauthorizedAccessException) { }
+                            catch (IOException) { }
                         }
-                        catch { }
                         cur = cur.Parent;
                     }
                 }
