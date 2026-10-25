@@ -42,18 +42,29 @@ public partial class GlossaryWindow : Window
             FileTypeFilter = [new FilePickerFileType("CSV Dosyası") { Patterns = ["*.csv"] }]
         };
 
-        var result = await StorageProvider.OpenFilePickerAsync(options);
-        var path = result.FirstOrDefault()?.TryGetLocalPath();
-        if (!string.IsNullOrEmpty(path))
+        // async void olay işleyicisinde yakalanmayan hata tüm uygulamayı kapatır; bozuk/kilitli CSV'ye karşı koru.
+        try
         {
+            var result = await StorageProvider.OpenFilePickerAsync(options);
+            var path = result.FirstOrDefault()?.TryGetLocalPath();
+            if (string.IsNullOrEmpty(path)) return;
+
             var entries = await GlossaryCsvHelper.ImportFromCsvAsync(path);
+            var existing = new HashSet<string>(ViewModel.GlossaryList.Select(g => g.Original), StringComparer.OrdinalIgnoreCase);
+            int added = 0;
             foreach (var item in entries)
             {
-                if (!ViewModel.GlossaryList.Any(g => g.Original.Equals(item.Original, StringComparison.OrdinalIgnoreCase)))
+                if (existing.Add(item.Original))
                 {
                     ViewModel.GlossaryList.Add(item);
+                    added++;
                 }
             }
+            ViewModel.StatusMessage = $"📥 Sözlüğe {added} yeni terim eklendi.";
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusMessage = $"⚠️ CSV içe aktarılamadı: {ex.Message}";
         }
     }
 
@@ -66,17 +77,32 @@ public partial class GlossaryWindow : Window
             FileTypeChoices = [new FilePickerFileType("CSV Dosyası") { Patterns = ["*.csv"] }]
         };
 
-        var result = await StorageProvider.SaveFilePickerAsync(options);
-        var path = result?.TryGetLocalPath();
-        if (!string.IsNullOrEmpty(path))
+        try
         {
-            await GlossaryCsvHelper.ExportToCsvAsync(path, ViewModel.GlossaryList);
+            var result = await StorageProvider.SaveFilePickerAsync(options);
+            var path = result?.TryGetLocalPath();
+            if (!string.IsNullOrEmpty(path))
+            {
+                await GlossaryCsvHelper.ExportToCsvAsync(path, ViewModel.GlossaryList);
+                ViewModel.StatusMessage = $"📤 Sözlük dışa aktarıldı: {Path.GetFileName(path)}";
+            }
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusMessage = $"⚠️ CSV dışa aktarılamadı: {ex.Message}";
         }
     }
 
     private async void OnSaveAndCloseClick(object? sender, RoutedEventArgs e)
     {
-        await ViewModel.SaveSettingsAsync();
+        try
+        {
+            await ViewModel.SaveSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            ViewModel.StatusMessage = $"⚠️ Ayarlar kaydedilemedi: {ex.Message}";
+        }
         Close();
     }
 }

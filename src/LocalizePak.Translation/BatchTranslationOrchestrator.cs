@@ -210,8 +210,10 @@ public sealed class BatchTranslationOrchestrator
                         }
                         else
                         {
-                            // AI boş döndü veya çeviri başarısız oldu — Sahte Done yapma, hata olarak bildir
-                            entry.TranslatedText = entry.SourceText;
+                            // AI boş döndü veya çeviri başarısız oldu — Sahte Done yapma, hata olarak bildir.
+                            // Satırda önceden (ör. elle düzeltilmiş) bir çeviri varsa onu silme; yoksa kaynak metni koy.
+                            if (string.IsNullOrWhiteSpace(entry.TranslatedText))
+                                entry.TranslatedText = entry.SourceText;
                             entry.Status = TranslationStatus.Error;
                             entry.Notes = "AI çevirisi boş döndü veya parse edilemedi.";
                             batchErrorCount++;

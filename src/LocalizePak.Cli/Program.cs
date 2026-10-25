@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using LocalizePak.Core.Models;
 using LocalizePak.IO;
 using LocalizePak.IO.Formats;
+using LocalizePak.IO.Helpers;
 using LocalizePak.IO.Services;
 
 namespace LocalizePak.Cli;
@@ -142,8 +143,9 @@ internal static class Program
         {
             try
             {
+                // Arşiv içi yol "../" veya mutlak yol içerebilir (zip-slip); çıktı klasörü dışına yazmayı reddet.
+                var dest = SafeIo.ResolveChildPath(outDir, e.VirtualPath);
                 await using var s = await svc.ExtractEntryAsync(archive, e);
-                var dest = Path.Combine(outDir, e.VirtualPath.Replace('/', Path.DirectorySeparatorChar));
                 Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                 await using var fs = File.Create(dest);
                 await s.CopyToAsync(fs);
