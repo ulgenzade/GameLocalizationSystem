@@ -37,8 +37,52 @@ public class TranslationQaTests
         var issues = TranslationQaService.ValidateEntry(entry);
 
         Assert.NotEmpty(issues);
-        Assert.Contains(issues, i => i.IssueType == QaIssueType.UntranslatedContent && 
-                                     i.Category == MqmCategory.Accuracy && 
+        Assert.Contains(issues, i => i.IssueType == QaIssueType.UntranslatedContent &&
+                                     i.Category == MqmCategory.Accuracy &&
                                      i.Severity == QaSeverity.High);
+    }
+
+    [Fact]
+    public void GetHighestSeverity_WithMixedIssues_ReturnsCritical()
+    {
+        var entry = new LocalizationEntry
+        {
+            Key = "UI_GOLD",
+            SourceText = "Found {0} gold",
+            TranslatedText = "Bir miktar altın buldun, harika bir iş" // {0} eksik (Critical) + taşma (Medium)
+        };
+
+        var issues = TranslationQaService.ValidateEntry(entry);
+
+        Assert.Contains(issues, i => i.Severity == QaSeverity.Medium);
+        Assert.Equal(QaSeverity.Critical, TranslationQaService.GetHighestSeverity(issues));
+    }
+
+    [Fact]
+    public void GetHighestSeverity_WithNoIssues_ReturnsNull()
+    {
+        Assert.Null(TranslationQaService.GetHighestSeverity([]));
+    }
+
+    [Fact]
+    public void BuildIssueSummary_OrdersBySeverityAndUsesTurkishLabels()
+    {
+        var issues = new List<QaIssue>
+        {
+            new("K", "NS", "src", "tr", QaIssueType.OverflowRisk, "Taşma", false, MqmCategory.Design, QaSeverity.Medium),
+            new("K", "NS", "src", "tr", QaIssueType.MissingVariable, "Değişken eksik", true, MqmCategory.Accuracy, QaSeverity.Critical)
+        };
+
+        var lines = TranslationQaService.BuildIssueSummary(issues).Split(Environment.NewLine);
+
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("🔴 Kritik · Doğruluk — Değişken eksik", lines[0]);
+        Assert.Equal("🟡 Orta · Biçim/Arayüz — Taşma", lines[1]);
+    }
+
+    [Fact]
+    public void BuildIssueSummary_WithNoIssues_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, TranslationQaService.BuildIssueSummary([]));
     }
 }
