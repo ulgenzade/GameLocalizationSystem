@@ -42,6 +42,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        // Çok dilli CSV/TSV tablolarında kaynak ve hedef sütunları seçili dillere göre belirlenir
+        _locresService.LanguagePreference = () => (MapLanguageToIsoCode(SelectedSourceLanguage), MapLanguageToIsoCode(SelectedTargetLanguage));
         _ = LoadSettingsAsync();
         _ = CheckRecoverySessionAsync();
     }
