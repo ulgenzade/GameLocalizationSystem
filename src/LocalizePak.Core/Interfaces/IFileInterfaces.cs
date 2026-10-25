@@ -39,13 +39,15 @@ public interface IPakWriter
     /// <param name="ct">İptal token'ı.</param>
     /// <param name="sourceFormat">Orijinal arşivin format türü. Doğru serileştiriciyi seçmek için kullanılır.</param>
     /// <param name="aesKey">Şifreli arşivler için 256-bit Hex AES anahtarı. Opsiyonel.</param>
+    /// <param name="sourceArchivePath">Özgün arşivin yolu. Yerinde yamalanan formatlar (Unity) için gereklidir.</param>
     Task WriteAsync(
         string outputPath,
         string mountPoint,
         IReadOnlyList<(string VirtualPath, byte[] Data)> files,
         CancellationToken ct = default,
         PakFormat sourceFormat = PakFormat.Unknown,
-        string? aesKey = null);
+        string? aesKey = null,
+        string? sourceArchivePath = null);
 }
 
 /// <summary>
