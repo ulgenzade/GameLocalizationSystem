@@ -105,4 +105,5 @@ services.AddTransient<ITranslationProvider, GeminiTranslationProvider>();
 | GC iyileştirmeleri | Temel | Gelişmiş |
 | **Öneri** | ✅ Üretim için seç | Deneysel |
 
-> Proje **hedef çerçeve** olarak `net8.0` kullanır (LTS — Uzun Vadeli Destek).
+> Proje **hedef çerçeve** olarak `net10.0` kullanır (LTS — Uzun Vadeli Destek). `net8.0`'dan geçişin nedeni:
+> UE 5.4+ paketlerini (pak v12 `Utf8PakDirectory`, yeni IoStore sürümleri) okuyan güncel CUE4Parse sürümleri yalnızca .NET 10 hedefler.
