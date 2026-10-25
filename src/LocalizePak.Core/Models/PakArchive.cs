@@ -30,6 +30,20 @@ public sealed class PakArchive
     /// </summary>
     public PakFormat Format { get; set; } = PakFormat.Unknown;
 
+    /// <summary>
+    /// UE5 IoStore konteyneri (.utoc/.ucas) ile birlikte açıldıysa .utoc yolu. Yama üretilirken <c>_P.pak</c>'ın yanına
+    /// motorun beklediği <c>_P.utoc</c>/<c>_P.ucas</c> eşi de yazılır.
+    /// </summary>
+    public string? IoStoreTocPath { get; set; }
+
+    /// <summary>Kaynak .utoc sürümü (EIoStoreTocVersion); yama konteyneri aynı sürümle yazılır.</summary>
+    public int IoStoreTocVersion { get; set; }
+
+    /// <summary>Kaynak konteyner başlığı sürümü (EIoContainerHeaderVersion).</summary>
+    public int IoStoreContainerHeaderVersion { get; set; }
+
+    public bool IsIoStore => IoStoreTocPath != null;
+
     /// <summary>Arşiv içindeki tüm dosya girdileri.</summary>
     public IReadOnlyList<PakEntry> Entries { get; set; } = [];
 
