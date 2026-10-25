@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO.Helpers;
 
 namespace LocalizePak.IO.Formats;
 
@@ -66,10 +67,14 @@ public sealed class ZipPakHandler
         if (zEntry is null)
             throw new FileNotFoundException($"ZIP arşivi içinde dosya bulunamadı: {entry.VirtualPath}");
 
+        if (zEntry.Length > SafeIo.MaxEntrySize)
+            throw new InvalidDataException($"ZIP girdisi çok büyük: {entry.VirtualPath} ({zEntry.Length:N0} bayt)");
+
         var ms = new MemoryStream();
         await using (var entryStream = zEntry.Open())
         {
-            await entryStream.CopyToAsync(ms, ct);
+            // Merkezi dizindeki boyut sahte olabilir; açılan veriyi sınırlı kopyala (zip bombası koruması).
+            await SafeIo.CopyBoundedAsync(entryStream, ms, SafeIo.DecompressionLimit(zEntry.Length), ct);
         }
         ms.Position = 0;
         return ms;
