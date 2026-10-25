@@ -4,6 +4,7 @@ using LocalizePak.Core.Enums;
 using LocalizePak.Core.Interfaces;
 using LocalizePak.Core.Models;
 using LocalizePak.IO.Formats;
+using LocalizePak.IO.Formats.IoStore;
 using LocalizePak.IO.Helpers;
 using ZstdSharp;
 
@@ -102,7 +103,13 @@ public sealed class PakService : IPakReader, IPakWriter
             return classicPak;
         }
 
-        // 6. Unreal Engine .pak (V1–V11+ / UE4 & UE5, Oodle, LZ4, Zlib, AES-256)
+        // 6a. UE5 IoStore içerik tablosu (.utoc): aynı adlı .pak ile tek arşiv olarak açılır
+        if (UnrealCuePakHandler.IsIoStoreToc(fs))
+        {
+            return await UnrealCuePakHandler.ReadArchiveAsync(filePath, aesKey, ct);
+        }
+
+        // 6. Unreal Engine .pak (V1–V12 / UE4 & UE5, Oodle, LZ4, Zlib, AES-256)
         if (UnrealCuePakHandler.IsUnrealPak(fs))
         {
             try
@@ -291,6 +298,29 @@ public sealed class PakService : IPakReader, IPakWriter
         await using var fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
         UnrealPakWriter.Write(fs, mountPoint, files, keyBytes);
         await fs.FlushAsync(ct);
+    }
+
+    /// <summary>
+    /// IoStore kullanan oyunlar için <paramref name="pakPath"/> yamasının yanına aynı adlı <c>.utoc</c>/<c>.ucas</c>
+    /// eşini yazar (paket içermeyen, yalnızca konteyner başlığı olan konteyner). Motor bir .pak'ı bağlarken aynı adlı
+    /// .utoc'u da bağlar; eş, kaynak oyunun TOC ve konteyner başlığı sürümleriyle üretilir.
+    /// </summary>
+    public static Task WriteIoStoreCompanionAsync(string pakPath, PakArchive source, CancellationToken ct = default)
+    {
+        if (!source.IsIoStore)
+            throw new InvalidOperationException("Kaynak arşiv bir IoStore konteyneri değil.");
+
+        return Task.Run(() =>
+        {
+            var basePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(pakPath)) ?? ".", Path.GetFileNameWithoutExtension(pakPath));
+            var mountPoint = string.IsNullOrWhiteSpace(source.MountPoint) ? "../../../" : source.MountPoint;
+            IoStoreContainerWriter.Write(
+                basePath,
+                [],
+                (CUE4Parse.UE4.IO.Objects.EIoStoreTocVersion)source.IoStoreTocVersion,
+                (CUE4Parse.UE4.IO.Objects.EIoContainerHeaderVersion)source.IoStoreContainerHeaderVersion,
+                mountPoint);
+        }, ct);
     }
 
     // ─── Unreal Engine Archive Helpers ────────────────────────────────────────

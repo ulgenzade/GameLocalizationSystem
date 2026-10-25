@@ -41,6 +41,12 @@ public sealed class PakEntry
     /// </summary>
     public long SolidStreamSize { get; set; }
 
+    /// <summary>
+    /// Arşivde fiziksel olarak bulunmayan, paketlerdeki metinlerden üretilen girdi (ör. IoStore paketlerinden toplanan
+    /// <c>Game.locres</c>). Yama olarak yazıldığında oyuna yeni dosya olarak eklenir.
+    /// </summary>
+    public bool IsGenerated { get; set; }
+
     /// <summary>Uzantıya göre bu girdinin lokalizasyon/metin dosyası olup olmadığı.</summary>
     public bool IsLocalizationFile =>
         VirtualPath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase) ||
@@ -65,6 +71,8 @@ public sealed class PakEntry
     public bool IsEngineFile =>
         !IsAllArchive &&
         (VirtualPath.Contains("Engine.locres", StringComparison.OrdinalIgnoreCase) ||
+         VirtualPath.StartsWith("Engine/", StringComparison.OrdinalIgnoreCase) ||
+         VirtualPath.StartsWith("../../../Engine/", StringComparison.OrdinalIgnoreCase) ||
          VirtualPath.Contains("/Engine/", StringComparison.OrdinalIgnoreCase) ||
          VirtualPath.Contains("\\Engine\\", StringComparison.OrdinalIgnoreCase));
 
