@@ -182,6 +182,60 @@ public static class TranslationQaService
     }
 
     /// <summary>
+    /// Sorun listesindeki en yüksek önem derecesini döndürür (Critical en yüksektir).
+    /// </summary>
+    /// <returns>Liste boşsa null.</returns>
+    public static QaSeverity? GetHighestSeverity(IReadOnlyCollection<QaIssue> issues)
+    {
+        if (issues.Count == 0)
+            return null;
+
+        return issues.Min(i => i.Severity);
+    }
+
+    /// <summary>
+    /// DataGrid tooltip'i için sorunları önem derecesine göre sıralı, satır satır özetler.
+    /// Örnek satır: "🔴 Kritik · Doğruluk — Kaynak metindeki '{0}' değişkeni çeviride bulunamadı."
+    /// </summary>
+    public static string BuildIssueSummary(IReadOnlyCollection<QaIssue> issues)
+    {
+        if (issues.Count == 0)
+            return string.Empty;
+
+        var lines = issues
+            .OrderBy(i => i.Severity)
+            .Select(i => $"{GetSeverityIcon(i.Severity)} {GetSeverityLabel(i.Severity)} · {GetCategoryLabel(i.Category)} — {i.Description}");
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    public static string GetSeverityLabel(QaSeverity severity) => severity switch
+    {
+        QaSeverity.Critical => "Kritik",
+        QaSeverity.High => "Yüksek",
+        QaSeverity.Medium => "Orta",
+        QaSeverity.Low => "Düşük",
+        _ => severity.ToString()
+    };
+
+    public static string GetCategoryLabel(MqmCategory category) => category switch
+    {
+        MqmCategory.Accuracy => "Doğruluk",
+        MqmCategory.Fluency => "Akıcılık",
+        MqmCategory.Terminology => "Terminoloji",
+        MqmCategory.Design => "Biçim/Arayüz",
+        _ => category.ToString()
+    };
+
+    private static string GetSeverityIcon(QaSeverity severity) => severity switch
+    {
+        QaSeverity.Critical => "🔴",
+        QaSeverity.High => "🟠",
+        QaSeverity.Medium => "🟡",
+        _ => "⚪"
+    };
+
+    /// <summary>
     /// Girdideki eksik değişkenleri ve kapanmayan etiketleri otomatik onarır.
     /// </summary>
     /// <returns>Düzeltme yapıldıysa true, gerekmediyse false.</returns>

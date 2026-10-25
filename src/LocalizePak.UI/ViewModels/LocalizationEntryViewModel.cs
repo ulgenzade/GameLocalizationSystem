@@ -43,14 +43,50 @@ public sealed partial class LocalizationEntryViewModel : ObservableObject
         OnPropertyChanged(nameof(IsOverflowRisk));
         OnPropertyChanged(nameof(LengthInfo));
         OnPropertyChanged(nameof(OverflowColor));
+        InvalidateQa();
     }
 
     public TranslationStatus Status => _model.Status;
     public bool HasError => _model.HasVariableError;
     public string? Notes => _model.Notes;
 
+    private IReadOnlyList<QaIssue>? _qaIssues;
+
+    /// <summary>Satırın güncel QA sorunları (metin değişene kadar önbelleklenir).</summary>
+    public IReadOnlyList<QaIssue> QaIssues => _qaIssues ??= TranslationQaService.ValidateEntry(_model);
+
     /// <summary>QA etiket/değişken veya format sorunu var mı?</summary>
-    public bool HasQaIssue => TranslationQaService.ValidateEntry(_model).Count > 0;
+    public bool HasQaIssue => QaIssues.Count > 0;
+
+    public int QaIssueCount => QaIssues.Count;
+
+    /// <summary>Satırdaki en ağır MQM önem derecesi; sorun yoksa null.</summary>
+    public QaSeverity? HighestQaSeverity => TranslationQaService.GetHighestSeverity(QaIssues);
+
+    /// <summary>LQA rozet rengi: Kritik kırmızı, Yüksek turuncu, Orta sarı, Düşük gri.</summary>
+    public string QaBadgeColor => HighestQaSeverity switch
+    {
+        QaSeverity.Critical => "#EF4444",
+        QaSeverity.High => "#F97316",
+        QaSeverity.Medium => "#F59E0B",
+        _ => "#94A3B8"
+    };
+
+    /// <summary>Rozet tooltip'i: başlık + önem sırasına göre sorun listesi.</summary>
+    public string QaTooltip => HasQaIssue
+        ? $"LQA: {QaIssueCount} sorun (en yüksek: {TranslationQaService.GetSeverityLabel(HighestQaSeverity!.Value)}){Environment.NewLine}{TranslationQaService.BuildIssueSummary(QaIssues)}"
+        : string.Empty;
+
+    private void InvalidateQa()
+    {
+        _qaIssues = null;
+        OnPropertyChanged(nameof(QaIssues));
+        OnPropertyChanged(nameof(HasQaIssue));
+        OnPropertyChanged(nameof(QaIssueCount));
+        OnPropertyChanged(nameof(HighestQaSeverity));
+        OnPropertyChanged(nameof(QaBadgeColor));
+        OnPropertyChanged(nameof(QaTooltip));
+    }
 
     /// <summary>Karakter uzunluk farkı (%)</summary>
     public int LengthDifferencePercent =>
@@ -95,7 +131,7 @@ public sealed partial class LocalizationEntryViewModel : ObservableObject
         OnPropertyChanged(nameof(StatusLabel));
         OnPropertyChanged(nameof(StatusColor));
         OnPropertyChanged(nameof(HasError));
-        OnPropertyChanged(nameof(HasQaIssue));
+        InvalidateQa();
         OnPropertyChanged(nameof(Notes));
         OnPropertyChanged(nameof(LengthDifferencePercent));
         OnPropertyChanged(nameof(IsOverflowRisk));
