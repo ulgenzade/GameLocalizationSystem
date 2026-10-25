@@ -117,7 +117,7 @@ public class UnrealFormatTests
             };
             using (var fs = File.Create(pak)) UnrealPakWriter.Write(fs, "../../../", files, encryptIndex ? key : null);
 
-            var provider = new DefaultFileProvider(dir, SearchOption.TopDirectoryOnly, false, new VersionContainer(EGame.GAME_UE4_27));
+            var provider = new DefaultFileProvider(dir, SearchOption.TopDirectoryOnly, new VersionContainer(EGame.GAME_UE4_27), StringComparer.Ordinal);
             provider.Initialize();
             if (encryptIndex) provider.SubmitKey(new FGuid(), new FAesKey(key));
             else provider.Mount();

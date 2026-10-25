@@ -1,6 +1,6 @@
 # 🎮 GLS — Game Localization System
 
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/)
 [![Avalonia UI](https://img.shields.io/badge/Avalonia%20UI-11.2%2B-purple.svg)](https://avaloniaui.net/)
 [![Platform: Windows & Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-brightgreen.svg)]()
 [![WinUI 3 Fluent 2](https://img.shields.io/badge/UI-Fluent%202%20Tabs-0078D4.svg)]()
@@ -87,7 +87,7 @@ Lütfen ayrıntılı dokümantasyonu görüntülemek için tercih ettiğiniz dil
 | Skill | Açıklama |
 | :--- | :--- |
 | **`avalonia-fluent-architect`** | Avalonia UI 11.2+, CommunityToolkit.Mvvm, Windows 11 Fluent 2 / WinUI 3 sekmeli (`TabControl`) ve akordeon kart (`Expander`) tasarımı, Mica/Acrylic teması ve bellek sızıntısız asenkron UI yönetimi. |
-| **`dotnet-desktop-singlefile-packaging`** | .NET 8 SDK kullanılarak harici bağımlılık gerektirmeyen, sıkıştırılmış, yerel kitaplıkları gömülü tek parça Windows masaüstü (`GLS.exe`) ve Linux (`GLS`) derleme mimarisi. |
+| **`dotnet-desktop-singlefile-packaging`** | .NET 10 SDK kullanılarak harici bağımlılık gerektirmeyen, sıkıştırılmış, yerel kitaplıkları gömülü tek parça Windows masaüstü (`GLS.exe`) ve Linux (`GLS`) derleme mimarisi. |
 | **`game-ai-localization-orchestrator`** | Çoklu LLM sağlayıcılarında eşzamanlı toplu iş (batch) çevirisi, exponential backoff, rate-limit yönetimi, Translation Memory (TM) önbelleği ve edebi oyun diyalog adaptasyon kuralları. |
 | **`game-pak-reverse-engineering`** | Unreal Engine ve Larian arşiv ikili yapısı analizi, AES-256 şifre çözümü, Oodle/LZ4/Zstd sıkıştırma algoritmaları. |
 | **`locres-localization-parser`** | Unreal Engine ikili `.locres` formatı (V1-V3), namespace/hash üretimi ve CSV/JSON evrensel lokalizasyon ayrıştırma motoru. |
@@ -234,7 +234,7 @@ chmod +x scripts/build-linux.sh
 | Skill | Description |
 | :--- | :--- |
 | **`avalonia-fluent-architect`** | Avalonia UI 11.2+, CommunityToolkit.Mvvm, Windows 11 Fluent 2 / WinUI 3 tabbed navigation (`TabControl`), collapsible card sections (`Expander`), Mica/Acrylic theming, and leak-free async dispatching. |
-| **`dotnet-desktop-singlefile-packaging`** | .NET 8 SDK single-file self-contained desktop packaging (`GLS.exe` for Windows, `GLS` for Linux) with compressed native assemblies and zero runtime dependencies. |
+| **`dotnet-desktop-singlefile-packaging`** | .NET 10 SDK single-file self-contained desktop packaging (`GLS.exe` for Windows, `GLS` for Linux) with compressed native assemblies and zero runtime dependencies. |
 | **`game-ai-localization-orchestrator`** | Multi-provider LLM concurrency orchestrator, adaptive rate-limiting, exponential backoff, Translation Memory (TM) cache, and literary adaptation rules. |
 | **`game-pak-reverse-engineering`** | Unreal Engine & Larian archive binary structure parsers, AES-256 decryption, Oodle/LZ4/Zstd decompression algorithms. |
 | **`locres-localization-parser`** | Unreal Engine binary `.locres` serializer/parser (V1-V3), CRC/namespace hash computation, and delimited CSV/JSON string table drivers. |

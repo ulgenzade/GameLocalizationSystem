@@ -2,11 +2,11 @@
 name: dotnet-desktop-singlefile-packaging
 description: >-
   Builds, packages, and optimizes self-contained single-file Windows desktop applications
-  using .NET 8 SDK, Avalonia UI, and dotnet publish CLI commands.
+  using .NET 10 SDK, Avalonia UI, and dotnet publish CLI commands.
   Use when compiling distribution binaries, creating single .exe executables, or optimizing binary startup time.
 ---
 
-# .NET 8 Self-Contained Desktop Single-File Packaging Guide
+# .NET 10 Self-Contained Desktop Single-File Packaging Guide
 
 Bu rehber, **GameLocalizationSystem (GLS)** uygulamasının kullanıcı bilgisayarında hiçbir .NET SDK veya çalışma ortamı (runtime) kurulu olmasa dahi tek tıkla çalışabilen bağımsız (Self-Contained) tek dosya (`GLS.exe`) olarak paketlenmesi için kullanılır.
 

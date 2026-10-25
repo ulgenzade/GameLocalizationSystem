@@ -149,9 +149,9 @@ public sealed partial class MainViewModel
     private async Task OpenPakAsync()
     {
         var path = await ShowOpenFileDialogAsync(
-            "PAK Arşivi Seç (.pak)",
+            "PAK Arşivi Seç (.pak / .utoc)",
             [
-                ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["PAK / IoStore Arşivleri (*.pak, *.utoc)", "*.pak", "*.utoc"],
                 ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
             ]);
@@ -169,7 +169,7 @@ public sealed partial class MainViewModel
     public static bool IsArchivePath(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();
-        if (ext is ".pak" or ".assets" or ".bundle" or ".unity3d" or ".ab") return true;
+        if (ext is ".pak" or ".utoc" or ".assets" or ".bundle" or ".unity3d" or ".ab") return true;
         return ext.Length == 0 && UnityPakHandler.IsUnityFile(path);
     }
 
@@ -279,7 +279,9 @@ public sealed partial class MainViewModel
             Dispatcher.UIThread.Post(() =>
             {
                 IsLoading = true;
-                StatusMessage = $"Lokalizasyon dosyası okunuyor: {Path.GetFileName(entry.VirtualPath)}...";
+                StatusMessage = entry.IsGenerated
+                    ? "Oyunun kendi .locres dosyası yok; paketlerdeki metinler (FText / StringTable) taranıyor, bu bir dakika kadar sürebilir..."
+                    : $"Lokalizasyon dosyası okunuyor: {Path.GetFileName(entry.VirtualPath)}...";
             });
 
             await Task.Run(async () =>
@@ -369,7 +371,9 @@ public sealed partial class MainViewModel
                     ErrorCount = err;
                     ApplyFilter();
                     RefreshStats();
-                    StatusMessage = $"Yüklendi: {entry.VirtualPath} — {TotalEntries} girdi ({CompletedEntries} tamamlandı, {ErrorCount} hata)";
+                    StatusMessage = entry.IsGenerated
+                        ? $"Paketlerden {TotalEntries} metin toplandı ({entry.VirtualPath}). Çeviri yama olarak yeni bir Game.locres ile oyuna eklenir."
+                        : $"Yüklendi: {entry.VirtualPath} — {TotalEntries} girdi ({CompletedEntries} tamamlandı, {ErrorCount} hata)";
                     IsLoading = false;
                 });
             });
@@ -390,9 +394,9 @@ public sealed partial class MainViewModel
         var path = await ShowOpenFileDialogAsync(
             "Lokalizasyon veya Arşiv Dosyası Seç (.locres, .pak, .json, .csv, .xml)",
             [
-                ["Tüm Desteklenen Dosyalar", "*.locres", "*.pak", "*.assets", "*.bundle", "*.unity3d", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
+                ["Tüm Desteklenen Dosyalar", "*.locres", "*.pak", "*.utoc", "*.assets", "*.bundle", "*.unity3d", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
                 ["Lokalizasyon Dosyaları (*.locres, *.json, ...)", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.txt", "*.po"],
-                ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["PAK / IoStore Arşivleri (*.pak, *.utoc)", "*.pak", "*.utoc"],
                 ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
             ]);
@@ -405,7 +409,7 @@ public sealed partial class MainViewModel
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
 
-        // Kullanıcı bu diyalogdan .pak seçtiyse otomatik olarak .pak yükleyicisine yönlendir
+        // Kullanıcı bu diyalogdan .pak / .utoc / Unity dosyası seçtiyse otomatik olarak arşiv yükleyicisine yönlendir
         if (IsArchivePath(path))
         {
             await OpenPakFromPathAsync(path);
@@ -494,8 +498,8 @@ public sealed partial class MainViewModel
         var path = await ShowOpenFileDialogAsync(
             "Dosya veya Arşiv Ekle (.pak, .locres, .json, .csv, .xml, .po)",
             [
-                ["Tüm Desteklenen Dosyalar (*.pak, *.locres, ...)", "*.pak", "*.assets", "*.bundle", "*.unity3d", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
-                ["PAK Arşivleri (*.pak)", "*.pak"],
+                ["Tüm Desteklenen Dosyalar (*.pak, *.utoc, *.locres, ...)", "*.pak", "*.utoc", "*.assets", "*.bundle", "*.unity3d", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
+                ["PAK / IoStore Arşivleri (*.pak, *.utoc)", "*.pak", "*.utoc"],
                 ["Unity Dosyaları (*.assets, *.bundle, *.unity3d)", "*.assets", "*.bundle", "*.unity3d"],
                 ["Lokalizasyon Dosyaları (*.locres, *.json, ...)", "*.locres", "*.json", "*.csv", "*.tsv", "*.xml", "*.po", "*.txt"],
                 ["Tüm Dosyalar (*.*)", "*.*"]
@@ -509,7 +513,7 @@ public sealed partial class MainViewModel
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
 
-        // Kullanıcı bu diyalogdan .pak seçtiyse otomatik olarak .pak yükleyicisine yönlendir
+        // Kullanıcı bu diyalogdan .pak / .utoc / Unity dosyası seçtiyse otomatik olarak arşiv yükleyicisine yönlendir
         if (IsArchivePath(path))
         {
             await OpenPakFromPathAsync(path);

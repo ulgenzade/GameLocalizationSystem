@@ -1,17 +1,20 @@
 using System.Collections.Concurrent;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.IO;
+using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.VirtualFileSystem;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO.Formats.IoStore;
 
 namespace LocalizePak.IO.Formats;
 
 /// <summary>
-/// Unreal Engine (V1–V11+ / UE4 & UE5) paketlerini Oodle, LZ4, Zlib ve AES-256 desteğiyle
-/// evrensel düzeyde ayrıştıran ve çıkaran motor.
+/// Unreal Engine (V1–V12 / UE4 & UE5) paketlerini ve UE5 IoStore konteynerlerini (.utoc/.ucas) Oodle, LZ4, Zlib ve
+/// AES-256 desteğiyle ayrıştıran ve çıkaran motor. Aynı adlı .pak ve .utoc tek bir arşiv olarak gösterilir.
 /// </summary>
 public static class UnrealCuePakHandler
 {
@@ -141,6 +144,55 @@ public static class UnrealCuePakHandler
         }
     }
 
+    /// <summary>Akışın UE IoStore içerik tablosu (.utoc, magic "-==--==--==--==-") olup olmadığı.</summary>
+    public static bool IsIoStoreToc(Stream stream) => ReadTocVersion(stream) >= 0;
+
+    /// <summary>.utoc başlığındaki sürüm baytını (EIoStoreTocVersion) okur; .utoc değilse -1.</summary>
+    public static int ReadTocVersion(Stream stream)
+    {
+        if (stream.Length < 144) return -1;
+        long originalPos = stream.Position;
+        try
+        {
+            stream.Position = 0;
+            Span<byte> head = stackalloc byte[17];
+            stream.ReadExactly(head);
+            return head[..16].SequenceEqual("-==--==--==--==-"u8) ? head[16] : -1;
+        }
+        catch
+        {
+            return -1;
+        }
+        finally
+        {
+            stream.Position = originalPos;
+        }
+    }
+
+    /// <summary>.pak veya .utoc yolu için aynı ada sahip .utoc dosyası (IoStore konteyneri) varsa yolu.</summary>
+    public static string? FindCompanionToc(string filePath)
+    {
+        var toc = Path.ChangeExtension(filePath, ".utoc");
+        return File.Exists(toc) ? toc : null;
+    }
+
+    /// <summary>
+    /// IoStore TOC sürümünü yaklaşık motor sürümüne eşler (konteynerin hangi UE sürümüyle pişirildiğinin en iyi göstergesi).
+    /// </summary>
+    public static EGame MapTocVersionToEGame(int tocVersion) => (EIoStoreTocVersion)tocVersion switch
+    {
+        <= EIoStoreTocVersion.Initial => EGame.GAME_UE4_25,
+        EIoStoreTocVersion.DirectoryIndex => EGame.GAME_UE4_26,
+        EIoStoreTocVersion.PartitionSize => EGame.GAME_UE4_27,
+        EIoStoreTocVersion.PerfectHash => EGame.GAME_UE5_0,
+        EIoStoreTocVersion.PerfectHashWithOverflow => EGame.GAME_UE5_1,
+        EIoStoreTocVersion.OnDemandMetaData => EGame.GAME_UE5_2,
+        EIoStoreTocVersion.RemovedOnDemandMetaData => EGame.GAME_UE5_3,
+        EIoStoreTocVersion.ReplaceIoChunkHashWithIoHash => EGame.GAME_UE5_4,
+        EIoStoreTocVersion.AddedSourceHashes => EGame.GAME_UE5_5,
+        _ => EGame.GAME_UE5_LATEST
+    };
+
     /// <summary>Varsayılan Unreal Engine sürümü (ayarlanabilir).</summary>
     public static EGame DefaultGameVersion { get; set; } = EGame.GAME_UE4_27;
 
@@ -185,6 +237,14 @@ public static class UnrealCuePakHandler
     {
         try
         {
+            // IoStore kullanan oyunlarda .utoc sürümü motoru .pak sürümünden daha kesin belirtir
+            if (FindCompanionToc(filePath) is { } tocPath)
+            {
+                using var toc = File.OpenRead(tocPath);
+                int tocVersion = ReadTocVersion(toc);
+                if (tocVersion > 0) return MapTocVersionToEGame(tocVersion);
+            }
+
             using var fs = File.OpenRead(filePath);
             int version = DetectPakVersion(fs);
             return MapPakVersionToEGame(version);
@@ -232,50 +292,32 @@ public static class UnrealCuePakHandler
     {
         await Task.Yield();
         EnsureOodle(filePath);
-        var fileInfo = new FileInfo(filePath);
-        var dir = fileInfo.DirectoryName ?? Directory.GetCurrentDirectory();
-        var fileName = fileInfo.Name;
-
         var gameVersion = ueVersion ?? DetectEngineVersion(filePath);
-
-        // CUE4Parse FileProvider başlat
-        var provider = new DefaultFileProvider(dir, SearchOption.TopDirectoryOnly, false, new VersionContainer(gameVersion));
-        provider.Initialize();
-
-        // Şifresiz (veya yalnızca dosya içeriği şifreli) paklar anahtar gönderilmeden bağlanmaz; açıkça bağla.
-        if (string.IsNullOrWhiteSpace(aesKey)) provider.Mount();
-
-        bool isEncrypted = false;
-        if (!string.IsNullOrWhiteSpace(aesKey))
-        {
-            try
-            {
-                var key = new FAesKey(aesKey.Trim());
-                provider.SubmitKey(new FGuid(), key);
-                isEncrypted = true;
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException($"Geçersiz AES anahtarı: {ex.Message}", ex);
-            }
-        }
+        var provider = CreateProvider(filePath, aesKey, gameVersion);
+        bool isEncrypted = !string.IsNullOrWhiteSpace(aesKey);
 
         var entries = new List<PakEntry>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string mountPoint = string.Empty;
+        IoStoreReader? ioStore = null;
+        int pakVersion = 0;
 
-        foreach (var vfs in provider.MountedVfs)
+        // Aynı adlı .pak ve .utoc tek bir mantıksal konteynerdir (IoStore'da paketler .ucas'ta, diğer dosyalar .pak'ta)
+        foreach (var vfs in ContainersOf(provider, filePath))
         {
-            if (!string.Equals(vfs.Name, fileName, StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (vfs is IoStoreReader io) ioStore = io;
+            else if (vfs is CUE4Parse.UE4.Pak.PakFileReader pak) pakVersion = (int)pak.Info.Version;
+            if (string.IsNullOrEmpty(mountPoint)) mountPoint = vfs.MountPoint;
 
-            mountPoint = vfs.MountPoint;
             foreach (var kvp in vfs.Files)
             {
                 ct.ThrowIfCancellationRequested();
+                var path = kvp.Key.Replace('\\', '/');
+                if (!seen.Add(path)) continue;
                 var vfsFile = kvp.Value;
                 entries.Add(new PakEntry
                 {
-                    VirtualPath = kvp.Key.Replace('\\', '/'),
+                    VirtualPath = path,
                     UncompressedSize = vfsFile.Size,
                     CompressedSize = vfsFile.Size,
                     IsEncrypted = vfsFile.IsEncrypted,
@@ -291,19 +333,103 @@ public static class UnrealCuePakHandler
             throw new InvalidOperationException("Arşiv şifreli veya geçerli AES anahtarı ile çözülemedi.");
         }
 
+        // Oyunun kendi .locres dosyası yoksa paketlerdeki FText/StringTable metinlerinden üretilecek Game.locres girdisi
+        if (GeneratedLocresPath(entries) is { } generatedPath)
+        {
+            entries.Add(new PakEntry { VirtualPath = generatedPath, IsGenerated = true });
+        }
+
         // Önbelleğe kaydet (ExtractEntryAsync için)
         _cache[filePath] = (provider, DateTime.UtcNow);
 
-        return new PakArchive
+        var archive = new PakArchive
         {
             FilePath = filePath,
             Format = PakFormat.Unreal,
-            Version = 11,
+            Version = pakVersion > 0 ? pakVersion : 11,
             IsEncrypted = isEncrypted,
             AesKey = aesKey,
             MountPoint = mountPoint,
             Entries = entries
         };
+
+        if (ioStore != null)
+        {
+            archive.IoStoreTocPath = ioStore.Path;
+            archive.IoStoreTocVersion = (int)ioStore.TocResource.Header.Version;
+            try { archive.IoStoreContainerHeaderVersion = (int)(ioStore.ContainerHeader?.Version ?? EIoContainerHeaderVersion.Initial); }
+            catch { archive.IoStoreContainerHeaderVersion = (int)EIoContainerHeaderVersion.Initial; }
+        }
+        return archive;
+    }
+
+    /// <summary>
+    /// Klasördeki tüm paketleri bağlayan sağlayıcı. Şifresiz konteynerler her zaman bağlanır (ör. şifreli bir oyunda
+    /// global.utoc), anahtar verildiyse şifreli olanlar da açılır.
+    /// </summary>
+    private static DefaultFileProvider CreateProvider(string filePath, string? aesKey, EGame gameVersion)
+    {
+        var dir = Path.GetDirectoryName(Path.GetFullPath(filePath)) ?? Directory.GetCurrentDirectory();
+        var provider = new DefaultFileProvider(dir, SearchOption.TopDirectoryOnly, new VersionContainer(gameVersion), StringComparer.OrdinalIgnoreCase);
+        provider.Initialize();
+        provider.Mount();
+
+        if (!string.IsNullOrWhiteSpace(aesKey))
+        {
+            try
+            {
+                provider.SubmitKey(new FGuid(), new FAesKey(aesKey.Trim()));
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"Geçersiz AES anahtarı: {ex.Message}", ex);
+            }
+        }
+        return provider;
+    }
+
+    /// <summary>Açılan dosyayla aynı adı taşıyan bağlı konteynerler (ör. pakchunk0-Windows.pak + pakchunk0-Windows.utoc).</summary>
+    private static IEnumerable<IAesVfsReader> ContainersOf(DefaultFileProvider provider, string filePath)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(filePath);
+        return provider.MountedVfs
+            .Where(v => string.Equals(Path.GetFileNameWithoutExtension(v.Name), baseName, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(v => v is IoStoreReader ? 1 : 0); // önce .pak (bağlama noktası ve .locres), sonra .utoc
+    }
+
+    /// <summary>
+    /// Arşivde oyuna ait (motor dışı) hiç .locres yoksa ve çevrilebilir paket varsa üretilecek
+    /// <c>&lt;Proje&gt;/Content/Localization/Game/en/Game.locres</c> yolu; aksi halde null.
+    /// </summary>
+    public static string? GeneratedLocresPath(IReadOnlyList<PakEntry> entries)
+    {
+        if (entries.Any(e => e.IsGameFile && e.VirtualPath.EndsWith(".locres", StringComparison.OrdinalIgnoreCase)))
+            return null;
+
+        var package = entries.FirstOrDefault(e => IoStoreTextGatherer.IsGamePackage(e.VirtualPath));
+        if (package == null) return null;
+
+        var path = package.VirtualPath.TrimStart('/');
+        int slash = path.IndexOf('/');
+        if (slash <= 0) return null;
+        return $"{path[..slash]}/Content/Localization/Game/en/Game.locres";
+    }
+
+    private static readonly ConcurrentDictionary<string, byte[]> _generatedLocres = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Konteynerin paketlerini tarayıp toplanan metinleri .locres olarak döndürür (arşiv başına önbelleklenir).</summary>
+    private static byte[] GenerateLocres(DefaultFileProvider provider, string filePath, CancellationToken ct)
+    {
+        if (_generatedLocres.TryGetValue(filePath, out var cached)) return cached;
+
+        var files = ContainersOf(provider, filePath)
+            .SelectMany(v => v.Files.Values)
+            .DistinctBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(f => (f.Path, (Func<byte[]>)(() => f.Read())));
+        var locres = IoStoreTextGatherer.Gather(files, ct: ct);
+        var bytes = LocresCodec.Write(locres);
+        _generatedLocres[filePath] = bytes;
+        return bytes;
     }
 
     /// <summary>
@@ -337,20 +463,13 @@ public static class UnrealCuePakHandler
         }
         else
         {
-            var fileInfo = new FileInfo(filePath);
-            var dir = fileInfo.DirectoryName ?? Directory.GetCurrentDirectory();
-            var gameVersion = ueVersion ?? DetectEngineVersion(filePath);
-            provider = new DefaultFileProvider(dir, SearchOption.TopDirectoryOnly, false, new VersionContainer(gameVersion));
-            provider.Initialize();
-            if (!string.IsNullOrWhiteSpace(aesKey))
-            {
-                provider.SubmitKey(new FGuid(), new FAesKey(aesKey.Trim()));
-            }
-            else
-            {
-                provider.Mount();
-            }
+            provider = CreateProvider(filePath, aesKey, ueVersion ?? DetectEngineVersion(filePath));
             _cache[filePath] = (provider, DateTime.UtcNow);
+        }
+
+        if (entry.IsGenerated)
+        {
+            return new MemoryStream(GenerateLocres(provider, filePath, ct), writable: false);
         }
 
         // 1. Doğrudan Files dictionary üzerinden bul ve GameFile.Read() ile oku

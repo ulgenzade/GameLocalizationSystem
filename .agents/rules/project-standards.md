@@ -6,7 +6,7 @@ Bu kurallar, GameLocalizationSystem projesinde kod yazarken, hata ayıklarken ve
 - Kullanıcı ile iletişimde her zaman **TÜRKÇE** konuşulur ve yazılır.
 - Kod içi XML dokümantasyonları ve log mesajları tutarlı, açık ve anlaşılır olmalıdır.
 
-## 2. C# 12 ve .NET 8 Mimari Standartları
+## 2. C# ve .NET 10 Mimari Standartları
 - **File-scoped Namespaces:** Tüm dosyalarda `namespace LocalizePak.Namespace;` formatı kullanılmalıdır.
 - **Async/Await & Thread-Safety:** UI kilitlenmelerini önlemek için I/O ve şifreleme/çözme işlemleri arka plan iş parçacıklarında (`Task.Run` veya `IAsyncEnumerable`) çalıştırılmalıdır.
 - **Bellek ve Kaynak Yönetimi:**

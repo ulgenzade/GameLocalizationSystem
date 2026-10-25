@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalizePak.Core.Enums;
 using LocalizePak.Core.Models;
+using LocalizePak.IO;
 using LocalizePak.IO.Helpers;
 using LocalizePak.IO.Services;
 
@@ -358,6 +359,13 @@ public sealed partial class MainViewModel
             return;
         }
 
+        if (_currentArchive.IsIoStore)
+        {
+            // .ucas içindeki paketler eski .pak biçimine dökülürse oyun onları yüklemez; değişiklik yalnızca _P yamasıyla taşınır
+            StatusMessage = "IoStore (.utoc/.ucas) arşivleri doğrudan yeniden yazılamaz; 'Yama Paketi' ile _P yaması oluşturun.";
+            return;
+        }
+
         var defaultName = Path.GetFileName(_currentArchive.FilePath);
         var outputPath = await ShowSaveFileDialogAsync(
             ".pak Dosyasını Kaydet (Doğrudan Değiştir)",
@@ -450,6 +458,19 @@ public sealed partial class MainViewModel
                 return;
             }
 
+            // Paketlerden üretilen Game.locres (oyunun kendi yerelleştirmesi yok): motor yalnızca etkin kültürün klasörünü
+            // okur; "en" yanında hedef dil klasörüne de yazılır ki oyun hangi dilde açılırsa açılsın çeviri görünsün.
+            var targetIso = MapLanguageToIsoCode(SelectedTargetLanguage);
+            if (!string.IsNullOrEmpty(targetIso) && targetIso is not ("en" or "auto"))
+            {
+                foreach (var generated in _currentArchive.Entries.Where(e => e.IsGenerated))
+                {
+                    var match = filesToWrite.FirstOrDefault(f => string.Equals(f.VirtualPath, generated.VirtualPath, StringComparison.OrdinalIgnoreCase));
+                    if (match.Data != null)
+                        filesToWrite.Add((generated.VirtualPath.Replace("/en/", $"/{targetIso}/"), match.Data));
+                }
+            }
+
             var mountPoint = _currentArchive.MountPoint;
             await _pakService.WriteAsync(outputPath, mountPoint,
                 filesToWrite,
@@ -457,10 +478,16 @@ public sealed partial class MainViewModel
                 aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
                 sourceArchivePath: _currentArchive.FilePath);
 
+            // IoStore oyunları: motorun .pak ile birlikte aradığı _P.utoc/_P.ucas eşi
+            if (_currentArchive.IsIoStore)
+                await PakService.WriteIoStoreCompanionAsync(outputPath, _currentArchive);
+
             LastExportedDirectory = Path.GetDirectoryName(outputPath);
             HasExportedDirectory = !string.IsNullOrEmpty(LastExportedDirectory);
 
-            StatusMessage = $"Yama paketi oluşturuldu: {Path.GetFileName(outputPath)}";
+            StatusMessage = _currentArchive.IsIoStore
+                ? $"Yama oluşturuldu: {Path.GetFileName(outputPath)} + .utoc/.ucas (üçü birlikte Paks klasörüne kopyalanmalı)"
+                : $"Yama paketi oluşturuldu: {Path.GetFileName(outputPath)}";
         }
         catch (Exception ex)
         {
