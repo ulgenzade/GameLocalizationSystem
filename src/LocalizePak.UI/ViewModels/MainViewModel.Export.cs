@@ -30,6 +30,15 @@ public sealed partial class MainViewModel
 
     // ─── Dışa Aktarma Komutları ─────────────────────────────────────────────
 
+    /// <summary>
+    /// Yazılacak paketin AES anahtarı: yalnızca kaynak arşiv gerçekten şifreliyse. Şifresiz bir oyunun yaması şifrelenirse
+    /// (ör. Anahtar Havuzu'ndan yanlış eşleşen bir anahtarla) motor onu açamaz ve yama hiç yüklenmez.
+    /// </summary>
+    private string? PatchAesKey() =>
+        _currentArchive is { IsEncrypted: true }
+            ? _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey)
+            : null;
+
     [RelayCommand]
     private void OpenOutputFolder()
     {
@@ -52,6 +61,12 @@ public sealed partial class MainViewModel
             return;
         }
 
+        if (_currentArchive.IsIoStore)
+        {
+            StatusMessage = "IoStore (.utoc/.ucas) arşivleri doğrudan yeniden yazılamaz; 'Yama Paketi' ile _P yaması oluşturun.";
+            return;
+        }
+
         try
         {
             IsLoading = true;
@@ -66,7 +81,7 @@ public sealed partial class MainViewModel
             // Birebir aynı dosya adıyla (örn. English.pak) tarihli klasöre yaz
             await _pakService.WriteAsync(targetFilePath, mountPoint, filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                aesKey: PatchAesKey(),
                 sourceArchivePath: _currentArchive.FilePath);
 
             // Bilgi notu dosyası oluştur
@@ -384,7 +399,7 @@ public sealed partial class MainViewModel
 
             await _pakService.WriteAsync(outputPath, mountPoint, filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                aesKey: PatchAesKey(),
                 sourceArchivePath: _currentArchive.FilePath);
 
             LastExportedDirectory = Path.GetDirectoryName(outputPath);
@@ -475,7 +490,7 @@ public sealed partial class MainViewModel
             await _pakService.WriteAsync(outputPath, mountPoint,
                 filesToWrite,
                 sourceFormat: _currentArchive.Format,
-                aesKey: _currentArchive.AesKey ?? (string.IsNullOrWhiteSpace(AesKey) ? null : AesKey),
+                aesKey: PatchAesKey(),
                 sourceArchivePath: _currentArchive.FilePath);
 
             // IoStore oyunları: motorun .pak ile birlikte aradığı _P.utoc/_P.ucas eşi

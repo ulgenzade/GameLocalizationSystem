@@ -44,6 +44,16 @@ public class AesKeyVaultTests
     }
 
     [Fact]
+    public void FindKeyForPath_IgnoresWordsInUserFolders()
+    {
+        // "Desktop\GL System\..." eskiden "System Shock Remake" anahtarını seçtiriyordu; şifresiz oyunun yaması
+        // bu anahtarla şifrelenip oyunda hiç açılmıyordu.
+        var match = AesKeyVaultService.FindKeyForPath(
+            @"C:\Users\Alper\Desktop\GL System\kopya\ProSoccerOnline\ProSoccerOnline\Content\Paks\pakchunk0-Windows.utoc");
+        Assert.Null(match);
+    }
+
+    [Fact]
     public void AddOrUpdateKey_CustomKeyPersistsAndIsSearchable()
     {
         string uniqueGameName = "Test Game " + Guid.NewGuid().ToString("N")[..8];

@@ -110,7 +110,14 @@ public static class AesKeyVaultService
         Initialize();
         if (string.IsNullOrWhiteSpace(filePath)) return null;
 
-        var fullPath = filePath.ToLowerInvariant();
+        // Yalnızca oyuna ait kısım taranır: dosya adı + en fazla 4 üst klasör (…/OyunAdı/Proje/Content/Paks/x.pak).
+        // Tam yol kullanılırsa kullanıcı klasörlerindeki kelimeler (ör. "Desktop/GL System" → "System Shock") yanlış
+        // anahtar seçtirir; şifresiz bir oyunun yaması o anahtarla şifrelenip oyunda hiç açılmaz.
+        var segments = filePath.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.ToLowerInvariant())
+            .ToList();
+        var gameSegments = segments.Skip(Math.Max(0, segments.Count - 5)).ToList();
+        var fullPath = string.Join("/", gameSegments);
         var fileName = Path.GetFileNameWithoutExtension(filePath).ToLowerInvariant();
 
         lock (_lock)
@@ -149,7 +156,8 @@ public static class AesKeyVaultService
             foreach (var entry in _keys)
             {
                 var firstWord = entry.GameName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].ToLowerInvariant();
-                if (firstWord.Length >= 4 && fullPath.Contains(firstWord))
+                // Klasör/dosya adı bu kelimeyle başlamalı ("Hogwarts Legacy/…" evet, "GL System/…" → "System Shock" hayır)
+                if (firstWord.Length >= 4 && gameSegments.Any(s => s.StartsWith(firstWord, StringComparison.Ordinal)))
                 {
                     return entry;
                 }

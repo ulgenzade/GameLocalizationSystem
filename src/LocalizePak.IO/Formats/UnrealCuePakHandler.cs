@@ -294,17 +294,19 @@ public static class UnrealCuePakHandler
         EnsureOodle(filePath);
         var gameVersion = ueVersion ?? DetectEngineVersion(filePath);
         var provider = CreateProvider(filePath, aesKey, gameVersion);
-        bool isEncrypted = !string.IsNullOrWhiteSpace(aesKey);
+        bool keyGiven = !string.IsNullOrWhiteSpace(aesKey);
 
         var entries = new List<PakEntry>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string mountPoint = string.Empty;
         IoStoreReader? ioStore = null;
         int pakVersion = 0;
+        bool isEncrypted = false;
 
         // Aynı adlı .pak ve .utoc tek bir mantıksal konteynerdir (IoStore'da paketler .ucas'ta, diğer dosyalar .pak'ta)
         foreach (var vfs in ContainersOf(provider, filePath))
         {
+            isEncrypted |= vfs.IsEncrypted;
             if (vfs is IoStoreReader io) ioStore = io;
             else if (vfs is CUE4Parse.UE4.Pak.PakFileReader pak) pakVersion = (int)pak.Info.Version;
             if (string.IsNullOrEmpty(mountPoint)) mountPoint = vfs.MountPoint;
@@ -327,7 +329,11 @@ public static class UnrealCuePakHandler
             }
         }
 
-        if (entries.Count == 0 && isEncrypted)
+        // Şifre, arşivin gerçekte şifreli olmasına göre belirlenir; girilen (ör. Anahtar Havuzu'ndan otomatik eşleşen)
+        // bir anahtar şifresiz arşivi "şifreli" yapmaz — aksi halde yama, oyunun bilmediği bir anahtarla şifrelenirdi.
+        isEncrypted |= entries.Any(e => e.IsEncrypted);
+
+        if (entries.Count == 0 && keyGiven)
         {
             // Şifreli olup anahtar girilmemiş veya eşleşmemiş olabilir
             throw new InvalidOperationException("Arşiv şifreli veya geçerli AES anahtarı ile çözülemedi.");
@@ -348,7 +354,7 @@ public static class UnrealCuePakHandler
             Format = PakFormat.Unreal,
             Version = pakVersion > 0 ? pakVersion : 11,
             IsEncrypted = isEncrypted,
-            AesKey = aesKey,
+            AesKey = isEncrypted ? aesKey : null,
             MountPoint = mountPoint,
             Entries = entries
         };

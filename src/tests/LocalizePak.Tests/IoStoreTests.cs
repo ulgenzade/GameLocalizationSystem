@@ -326,6 +326,26 @@ public class IoStoreTests
         finally { Directory.Delete(dir, true); }
     }
 
+    [Fact]
+    public async Task UnencryptedArchive_OpenedWithKey_IsNotMarkedEncrypted()
+    {
+        var dir = NewTempDir();
+        try
+        {
+            using (var fs = File.Create(Path.Combine(dir, "pakchunk0-Windows.pak")))
+                UnrealPakWriter.Write(fs, "../../../", [("MyGame/Content/Localization/Game/en/Game.locres", LocresCodec.Write(new LocresFile { Version = LocresVersion.V2 }))]);
+
+            // Anahtar Havuzu'ndan (yanlış) eşleşen bir anahtar girilmiş olsa bile şifresiz arşiv şifresiz kalmalı;
+            // yoksa yama oyunun bilmediği bir anahtarla şifrelenir.
+            var archive = await new PakService().OpenAsync(Path.Combine(dir, "pakchunk0-Windows.pak"),
+                "0x11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF");
+
+            Assert.False(archive.IsEncrypted);
+            Assert.Null(archive.AesKey);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     // ─── Uçtan uca: .pak + .utoc aç, metinleri topla, yama ve eşini yaz ─────
 
     [Fact]
